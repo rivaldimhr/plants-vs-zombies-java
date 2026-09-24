@@ -75,6 +75,24 @@ class SpriteTest {
         }
     }
 
+    // Nama file harus persis sama (huruf besar/kecil): Linux membedakannya, Windows tidak
+    @Test
+    void spriteFileNamesMatchManifestExactly() throws Exception {
+        java.util.Properties manifest = new java.util.Properties();
+        try (java.io.InputStream in = new java.io.FileInputStream("image/sprites/sprites.properties")) {
+            manifest.load(in);
+        }
+        java.util.Set<String> files = new java.util.HashSet<>(
+                java.util.Arrays.asList(new java.io.File("image/sprites").list()));
+        for (String id : manifest.stringPropertyNames()) {
+            assertTrue(files.contains(id + ".png"), "image/sprites/" + id + ".png (cek huruf besar/kecil)");
+        }
+        java.util.Set<String> cards = new java.util.HashSet<>(java.util.Arrays.asList(new java.io.File("image/cards").list()));
+        for (PlantType type : PlantType.values()) {
+            assertTrue(cards.contains(type.name() + ".png"), type.getCardImage());
+        }
+    }
+
     @Test
     void soundFilesExist() {
         for (String name : new String[] { "plant", "shoot", "hit", "sun", "explode", "mine", "fire", "mower", "chomp",
