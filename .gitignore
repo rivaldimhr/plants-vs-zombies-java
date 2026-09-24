@@ -1,0 +1,6 @@
+# hasil compile
+bin/
+bin-test/
+*.class
+# log crash JVM
+hs_err_pid*.log
