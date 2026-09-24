@@ -4,7 +4,7 @@ package entity.zombie;
 public class DuckyTubeZombie extends Zombie {
 
     public DuckyTubeZombie(int x, int y) {
-        super("Ducky Tube Zombie", 100, true, 100, 1, x, y, "image/sprites/Duckytube.png");
+        super("Ducky Tube Zombie", 100, true, 100, 1, x, y, "duckytube");
     }
 
 }

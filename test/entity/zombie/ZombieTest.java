@@ -6,16 +6,28 @@ import static game.TestUtil.seconds;
 import static game.TestUtil.tick;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import entity.DamageType;
+import entity.effect.ArmorDropEffect;
+import entity.effect.DeathEffect;
+import entity.effect.SpriteEffect;
+import entity.plant.LilyPad;
 import entity.plant.Plant;
 import entity.plant.TallNut;
 import entity.plant.WallNut;
 import entity.projectile.PeaBullet;
 import game.Board;
 import game.Game;
+import game.GameEvent;
 
 class ZombieTest {
 
@@ -31,6 +43,8 @@ class ZombieTest {
     @Test
     void zombieStopsAndEatsPlantEverySecond() {
         Board board = quietBoard();
+        List<GameEvent> events = new ArrayList<>();
+        board.addListener(events::add);
         WallNut nut = new WallNut(px(5), px(2));
         board.addPlant(nut);
         Zombie zombie = new NormalZombie(px(5) + 30, px(2));
@@ -39,12 +53,13 @@ class ZombieTest {
         assertEquals(px(5) + 30, zombie.getX());
         assertTrue(zombie.isEating());
         assertEquals(nut.getMaxHealth() - 5 * zombie.getAttackDamage(), nut.getHealth());
+        assertTrue(events.contains(GameEvent.CHOMP));
     }
 
     @Test
     void zombieEatsPlantOnTopOfLilyPadFirst() {
         Board board = quietBoard();
-        entity.plant.LilyPad pad = new entity.plant.LilyPad(px(5), px(3));
+        LilyPad pad = new LilyPad(px(5), px(3));
         WallNut top = new WallNut(px(5), px(3));
         board.addPlant(pad);
         board.addPlant(top);
@@ -74,6 +89,45 @@ class ZombieTest {
         assertEquals(Zombie.WALK_DELAY / 2, new FootballZombie(0, 0).getWalkDelay());
     }
 
+    // ------------------------------------------------------------------ armor
+
+    @Test
+    void coneAbsorbsDamageFirstThenFalls() {
+        Board board = quietBoard();
+        ConeheadZombie zombie = new ConeheadZombie(px(8), px(2));
+        board.addZombie(zombie);
+        String armored = zombie.getSpriteId();
+        int body = zombie.getHealth();
+        zombie.takeDamage(100);
+        assertEquals(body, zombie.getHealth(), "badan belum kena");
+        zombie.takeDamage(50); // cone 125: sisa 25 tembus ke badan
+        assertNull(zombie.getArmor());
+        assertEquals(body - 25, zombie.getHealth());
+        assertNotEquals(armored, zombie.getSpriteId(), "berubah jadi zombie biasa");
+        board.update();
+        assertTrue(board.getEffects().stream().anyMatch(e -> e instanceof ArmorDropEffect), "cone jatuh");
+    }
+
+    @Test
+    void totalHealthIncludesArmor() {
+        BucketheadZombie zombie = new BucketheadZombie(0, 0);
+        assertEquals(zombie.getHealth() + zombie.getArmor().getHealth(), zombie.getTotalHealth());
+    }
+
+    @Test
+    void newspaperZombieEnragesWhenPaperIsDestroyed() {
+        NewspaperZombie zombie = new NewspaperZombie(px(8), px(2));
+        double normalAttack = zombie.getAttackSpeed();
+        zombie.takeDamage(NewspaperZombie.PAPER_HEALTH - 25);
+        assertFalse(zombie.isEnraged());
+        zombie.takeDamage(25);
+        assertTrue(zombie.isEnraged());
+        assertEquals(Zombie.WALK_DELAY / 2, zombie.getWalkDelay());
+        assertEquals(normalAttack / 2, zombie.getAttackSpeed());
+    }
+
+    // ------------------------------------------------------------------ kemampuan khusus
+
     @Test
     void poleVaulterJumpsOverFirstPlant() {
         Board board = quietBoard();
@@ -102,25 +156,12 @@ class ZombieTest {
     }
 
     @Test
-    void newspaperZombieEnragesWhenPaperIsDestroyed() {
-        NewspaperZombie zombie = new NewspaperZombie(px(8), px(2));
-        double normalAttack = zombie.getAttackSpeed();
-        zombie.takeDamage(NewspaperZombie.PAPER_HEALTH - 25);
-        assertFalse(zombie.isEnraged());
-        zombie.takeDamage(25);
-        assertTrue(zombie.isEnraged());
-        assertEquals(Zombie.WALK_DELAY / 2, zombie.getWalkDelay());
-        assertEquals(normalAttack / 2, zombie.getAttackSpeed());
-    }
-
-    @Test
     void snorkelCannotBeHitWhileSubmerged() {
         Board board = quietBoard();
         SnorkelZombie snorkel = new SnorkelZombie(px(6), px(3));
         board.addZombie(snorkel);
         assertFalse(snorkel.isTargetable());
-        PeaBullet pea = new PeaBullet(px(5), px(3), 25);
-        board.addBullet(pea);
+        board.addBullet(new PeaBullet(px(5), px(3), 25));
         seconds(board, 1);
         assertEquals(snorkel.getMaxHealth(), snorkel.getHealth());
     }
@@ -128,7 +169,7 @@ class ZombieTest {
     @Test
     void snorkelSurfacesWhenEating() {
         Board board = quietBoard();
-        Plant pad = new entity.plant.LilyPad(px(5), px(3));
+        Plant pad = new LilyPad(px(5), px(3));
         board.addPlant(pad);
         SnorkelZombie snorkel = new SnorkelZombie(px(5) + 20, px(3));
         board.addZombie(snorkel);
@@ -140,7 +181,7 @@ class ZombieTest {
     @Test
     void dolphinRiderInstantlyKillsFirstPlantOnly() {
         Board board = quietBoard();
-        Plant first = new entity.plant.LilyPad(px(6), px(4));
+        Plant first = new LilyPad(px(6), px(4));
         WallNut second = new WallNut(px(3), px(4));
         board.addPlant(first);
         board.addPlant(second);
@@ -149,7 +190,6 @@ class ZombieTest {
         board.update();
         assertFalse(board.getPlants().contains(first));
 
-        // tanaman kedua dimakan biasa (tidak langsung mati)
         for (int i = 0; i < 30 * Game.UPS && !dolphin.isEating(); i++) {
             board.update();
         }
@@ -170,5 +210,23 @@ class ZombieTest {
         assertEquals(nut.getMaxHealth(), nut.getHealth());
         tick(board, 2);
         assertEquals(nut.getMaxHealth() - zombie.getAttackDamage(), nut.getHealth());
+    }
+
+    // ------------------------------------------------------------------ animasi mati
+
+    @Test
+    void deathEffectDependsOnHowZombieDied() {
+        NormalZombie shot = new NormalZombie(px(5), px(2));
+        shot.takeDamage(1000);
+        assertInstanceOf(SpriteEffect.class, shot.createDeathEffect(), "animasi mati normal");
+
+        NormalZombie burnt = new NormalZombie(px(5), px(2));
+        burnt.takeDamage(1800, DamageType.EXPLOSION);
+        assertInstanceOf(DeathEffect.class, burnt.createDeathEffect());
+
+        PoleVaultingZombie pole = new PoleVaultingZombie(px(5), px(2));
+        pole.kill(DamageType.MOWER);
+        assertTrue(pole.isDead());
+        assertInstanceOf(DeathEffect.class, pole.createDeathEffect());
     }
 }

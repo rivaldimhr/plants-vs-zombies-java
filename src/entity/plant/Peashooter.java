@@ -6,7 +6,7 @@ import game.Board;
 public class Peashooter extends ShooterPlant {
 
     public Peashooter(int x, int y) {
-        super("Peashooter", 100, false, 25, 4, 100, -1, 10, x, y, "image/sprites/peashooter.gif");
+        super("Peashooter", 100, false, 25, 4, 100, -1, 10, x, y, "peashooter");
     }
 
     @Override

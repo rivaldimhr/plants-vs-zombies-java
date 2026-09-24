@@ -5,9 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kelas dasar layar menu: background gambar + daftar tombol.
+ * Kelas dasar layar menu: background + daftar tombol.
  * Hover, press, dan klik semua tombol diurus di sini, jadi subclass cukup
- * mendaftarkan tombol lewat addButton(...).
+ * mendaftarkan tombol lewat addButton(...) (tombol yang sudah tergambar di
+ * background) atau addVisibleButton(...) (tombol digambar oleh kode).
  */
 public abstract class BaseScreen implements ScreenMethod {
 
@@ -18,12 +19,21 @@ public abstract class BaseScreen implements ScreenMethod {
 		this.game = game;
 	}
 
-	// Path gambar background layar ini
+	// Path gambar background layar ini, atau null kalau subclass menggambar sendiri
 	protected abstract String getBackground();
 
 	protected MyButton addButton(String text, int x, int y, int width, int height, Runnable onClick) {
-		MyButton button = new MyButton(text, x, y, width, height, onClick);
+		MyButton button = new MyButton(text, x, y, width, height, () -> {
+			game.getSound().play("click");
+			onClick.run();
+		});
 		buttons.add(button);
+		return button;
+	}
+
+	protected MyButton addVisibleButton(String text, int x, int y, int width, int height, Runnable onClick) {
+		MyButton button = addButton(text, x, y, width, height, onClick);
+		button.setVisible(true);
 		return button;
 	}
 
@@ -33,10 +43,17 @@ public abstract class BaseScreen implements ScreenMethod {
 
 	@Override
 	public void render(Graphics2D g) {
-		g.drawImage(Assets.get(getBackground()), 0, 0, Board.WIDTH, Board.HEIGHT, null);
+		String background = getBackground();
+		if (background != null) {
+			g.drawImage(Assets.get(background), 0, 0, Board.WIDTH, Board.HEIGHT, null);
+		}
 		renderContent(g);
 		for (MyButton button : buttons) {
-			button.drawHighlight(g);
+			if (button.isVisible()) {
+				button.draw(g);
+			} else {
+				button.drawHighlight(g);
+			}
 		}
 	}
 
@@ -71,8 +88,14 @@ public abstract class BaseScreen implements ScreenMethod {
 		}
 	}
 
-	// Dipanggil saat pindah ke layar lain, supaya highlight tidak tertinggal
-	public void resetButtons() {
+	// Musik menu; layar yang tidak butuh musik bisa override
+	@Override
+	public void onShow() {
+		game.getSound().playMusic("music_day");
+	}
+
+	@Override
+	public void onHide() {
 		for (MyButton button : buttons) {
 			button.resetBooleans();
 		}

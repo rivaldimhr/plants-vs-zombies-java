@@ -4,17 +4,17 @@ package entity.plant;
 public class WallNut extends Plant {
 
     public WallNut(int x, int y) {
-        super("Wall-nut", 1000, false, 0, 0, 50, 0, 20, x, y, "image/sprites/Wallnut1.png");
+        super("Wall-nut", 1000, false, 0, 0, 50, 0, 20, x, y, "wallnut");
     }
 
     @Override
-    protected String getImagePath() {
+    protected String getSpriteId() {
         double ratio = (double) health / maxHealth;
         if (ratio > 2.0 / 3) {
-            return "image/sprites/Wallnut1.png";
+            return "wallnut";
         } else if (ratio > 1.0 / 3) {
-            return "image/sprites/Wallnut_cracked1.png";
+            return "wallnut_cracked1";
         }
-        return "image/sprites/Wallnut_cracked2.png";
+        return "wallnut_cracked2";
     }
 }

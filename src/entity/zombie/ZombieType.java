@@ -1,36 +1,32 @@
 package entity.zombie;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.BiFunction;
-import java.util.random.RandomGenerator;
 
 /**
- * Factory semua jenis zombie, beserta aturan spawn-nya.
- * weight  = peluang relatif muncul (makin besar makin sering)
- * minTime = detik paling awal zombie ini boleh muncul (zombie kuat muncul belakangan)
+ * Factory semua jenis zombie. points = "biaya" zombie saat menyusun wave
+ * (zombie kuat lebih mahal, jadi lebih jarang muncul di wave kecil).
  */
 public enum ZombieType {
-    NORMAL(NormalZombie::new, 30, 0),
-    CONEHEAD(ConeheadZombie::new, 20, 0),
-    NEWSPAPER(NewspaperZombie::new, 15, 30),
-    POLE_VAULTING(PoleVaultingZombie::new, 12, 40),
-    BUCKETHEAD(BucketheadZombie::new, 10, 60),
-    FOOTBALL(FootballZombie::new, 8, 90),
-    DUCKY_TUBE(DuckyTubeZombie::new, 35, 0),
-    DUCKY_TUBE_CONEHEAD(DuckyTubeConeheadZombie::new, 25, 30),
-    SNORKEL(SnorkelZombie::new, 20, 40),
-    DOLPHIN_RIDER(DolphinRiderZombie::new, 20, 60);
+    NORMAL(NormalZombie::new, 1, "Zombie biasa. Pelan tapi tidak pernah menyerah."),
+    CONEHEAD(ConeheadZombie::new, 2, "Traffic cone di kepalanya membuatnya dua kali lebih tahan."),
+    POLE_VAULTING(PoleVaultingZombie::new, 2, "Berlari dan melompati tanaman pertama dengan galah. Tidak bisa melompati Tall-nut."),
+    BUCKETHEAD(BucketheadZombie::new, 4, "Ember besi di kepalanya sangat kuat."),
+    NEWSPAPER(NewspaperZombie::new, 2, "Terlindung koran. Kalau korannya hancur, dia marah dan jadi cepat."),
+    FOOTBALL(FootballZombie::new, 4, "Berlari cepat dengan helm dan baju rugby."),
+    DUCKY_TUBE(DuckyTubeZombie::new, 1, "Zombie biasa dengan pelampung bebek. Muncul di kolam."),
+    DUCKY_TUBE_CONEHEAD(DuckyTubeConeheadZombie::new, 2, "Conehead dengan pelampung bebek. Muncul di kolam."),
+    SNORKEL(SnorkelZombie::new, 2, "Menyelam sehingga tidak bisa ditembak, lalu muncul untuk memakan tanaman."),
+    DOLPHIN_RIDER(DolphinRiderZombie::new, 3, "Menunggang lumba-lumba. Tanaman pertama yang ditemui langsung mati.");
 
     private final BiFunction<Integer, Integer, Zombie> factory;
-    private final int weight;
-    private final int minTime;
+    private final int points;
+    private final String description;
     private final Zombie prototype;
 
-    ZombieType(BiFunction<Integer, Integer, Zombie> factory, int weight, int minTime) {
+    ZombieType(BiFunction<Integer, Integer, Zombie> factory, int points, String description) {
         this.factory = factory;
-        this.weight = weight;
-        this.minTime = minTime;
+        this.points = points;
+        this.description = description;
         this.prototype = factory.apply(0, 0);
     }
 
@@ -46,39 +42,16 @@ public enum ZombieType {
         return prototype.getName();
     }
 
-    public int getWeight() {
-        return weight;
+    public int getPoints() {
+        return points;
     }
 
-    public int getMinTime() {
-        return minTime;
+    public String getDescription() {
+        return description;
     }
 
-    // Jenis zombie yang boleh muncul di baris air/darat pada detik ke-time
-    public static List<ZombieType> available(boolean aquatic, int time) {
-        List<ZombieType> result = new ArrayList<>();
-        for (ZombieType type : values()) {
-            if (type.isAquatic() == aquatic && time >= type.minTime) {
-                result.add(type);
-            }
-        }
-        return result;
-    }
-
-    // Pilih acak berdasarkan weight
-    public static ZombieType random(boolean aquatic, int time, RandomGenerator random) {
-        List<ZombieType> candidates = available(aquatic, time);
-        int total = 0;
-        for (ZombieType type : candidates) {
-            total += type.weight;
-        }
-        int roll = random.nextInt(total);
-        for (ZombieType type : candidates) {
-            roll -= type.weight;
-            if (roll < 0) {
-                return type;
-            }
-        }
-        return candidates.get(candidates.size() - 1);
+    // Prototipe hanya untuk dibaca (stat, sprite di Almanac)
+    public Zombie getPrototype() {
+        return prototype;
     }
 }

@@ -2,11 +2,13 @@ package game;
 
 public enum States {
     MENU,
-    PLANTS_LIST,
-    ZOMBIES_LIST,
-    HELP,
+    LEVEL_SELECT,
     INVENTORY,
     GAME_LEVEL,
     GAME_OVER,
-    WIN;
+    WIN,
+    PLANTS_LIST,
+    ZOMBIES_LIST,
+    HELP,
+    SETTINGS;
 }

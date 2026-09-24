@@ -4,3 +4,7 @@ bin-test/
 *.class
 # log crash JVM
 hs_err_pid*.log
+
+# hasil build JAR
+build/
+dist/

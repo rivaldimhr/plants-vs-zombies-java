@@ -1,0 +1,40 @@
+# Setiap push / pull request: jalankan semua unit test dan buat JAR.
+# Setiap tag v* (misalnya v2.0.0): JAR otomatis dilampirkan ke GitHub Release.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Unit test
+        run: sh ./test.sh
+
+      - name: Build JAR
+        run: sh ./build-jar.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plants-vs-zombies-jar
+          path: dist/plants-vs-zombies.jar
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/plants-vs-zombies.jar

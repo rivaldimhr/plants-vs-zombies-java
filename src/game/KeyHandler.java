@@ -8,7 +8,7 @@ public class KeyHandler implements KeyListener {
     // volatile: di-set thread UI (Swing), dibaca thread game
     public volatile boolean upPressed, downPressed, leftPressed, rightPressed, numPressed;
 
-    public volatile boolean enterPressed, pausePressed;
+    public volatile boolean enterPressed, pausePressed, speedPressed;
     public volatile int numkey; // nyimpen nomor yg di teka
 
     public KeyHandler() {
@@ -17,7 +17,7 @@ public class KeyHandler implements KeyListener {
 
     // Hapus semua input yang belum diproses (dipanggil saat mulai game baru)
     public void reset() {
-        upPressed = downPressed = leftPressed = rightPressed = numPressed = enterPressed = pausePressed = false;
+        upPressed = downPressed = leftPressed = rightPressed = numPressed = enterPressed = pausePressed = speedPressed = false;
         numkey = 0;
     }
 
@@ -43,6 +43,9 @@ public class KeyHandler implements KeyListener {
             case KeyEvent.VK_P:
             case KeyEvent.VK_ESCAPE:
                 pausePressed = true;
+                break;
+            case KeyEvent.VK_F:
+                speedPressed = true;
                 break;
             case KeyEvent.VK_1:
             case KeyEvent.VK_2:

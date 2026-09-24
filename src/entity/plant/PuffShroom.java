@@ -8,12 +8,17 @@ public class PuffShroom extends ShooterPlant {
     public static final int RANGE = 3;
 
     public PuffShroom(int x, int y) {
-        super("Puff-shroom", 100, false, 15, 4, 0, RANGE, 7, x, y, "image/sprites/PuffShroom.png");
+        super("Puff-shroom", 100, false, 15, 4, 0, RANGE, 7, x, y, "puffshroom");
     }
 
     @Override
     protected boolean isNocturnal() {
         return true;
+    }
+
+    @Override
+    protected int drawMaxHeight() {
+        return 40; // jamur kecil
     }
 
     @Override

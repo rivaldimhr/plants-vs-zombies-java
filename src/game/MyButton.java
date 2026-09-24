@@ -15,10 +15,12 @@ import java.awt.RenderingHints;
  */
 public class MyButton {
 
-	private final String text;
+	private String text;
 	private final Rectangle bounds;
 	private final Runnable onClick;
 	private boolean mouseOver, mousePressed;
+	private boolean enabled = true;
+	private boolean visible = false; // true = tombol digambar lengkap, false = hanya highlight
 
 	public MyButton(String text, int x, int y, int width, int height, Runnable onClick) {
 		this.text = text;
@@ -27,7 +29,7 @@ public class MyButton {
 	}
 
 	public void click() {
-		if (onClick != null) {
+		if (enabled && onClick != null) {
 			onClick.run();
 		}
 	}
@@ -35,15 +37,19 @@ public class MyButton {
 	// Tombol lengkap: badan, border, teks
 	public void draw(Graphics2D g) {
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		g.setColor(mousePressed ? new Color(70, 120, 40) : mouseOver ? new Color(110, 175, 60) : new Color(90, 150, 50));
+		if (!enabled) {
+			g.setColor(new Color(95, 95, 95));
+		} else {
+			g.setColor(mousePressed ? new Color(70, 120, 40) : mouseOver ? new Color(110, 175, 60) : new Color(90, 150, 50));
+		}
 		g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
 		g.setColor(new Color(40, 70, 20));
 		g.setStroke(new BasicStroke(2));
 		g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 12, 12);
 		g.setStroke(new BasicStroke(1));
 
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Arial", Font.BOLD, 14));
+		g.setColor(enabled ? Color.WHITE : new Color(190, 190, 190));
+		g.setFont(new Font("Arial", Font.BOLD, bounds.height < 26 ? 12 : 14));
 		FontMetrics fm = g.getFontMetrics();
 		int tx = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
 		int ty = bounds.y + (bounds.height - fm.getHeight()) / 2 + fm.getAscent();
@@ -52,7 +58,7 @@ public class MyButton {
 
 	// Highlight transparan di atas tombol yang sudah tergambar di background
 	public void drawHighlight(Graphics2D g) {
-		if (!mouseOver) {
+		if (!mouseOver || !enabled) {
 			return;
 		}
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -83,6 +89,26 @@ public class MyButton {
 
 	public String getText() {
 		return text;
+	}
+
+	public void setText(String text) {
+		this.text = text;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+	public void setVisible(boolean visible) {
+		this.visible = visible;
 	}
 
 }

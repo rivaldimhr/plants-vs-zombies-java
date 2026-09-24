@@ -11,8 +11,8 @@ import entity.zombie.Zombie;
 import entity.zombie.ZombieType;
 
 /**
- * Stat harus sama dengan dokumentasi in-game (gambar di image/IMAGE/*DECK.png dan
- * gambar Zombies List). Kalau stat diubah, ubah juga gambarnya (atau test ini).
+ * Stat 10 tanaman & 10 zombie asli harus sama dengan dokumentasi tim (gambar
+ * image/IMAGE/*DECK.png dan Zombies List). 5 tanaman baru mengikuti PvZ asli.
  */
 class StatsTest {
 
@@ -29,9 +29,14 @@ class StatsTest {
             "PUFF_SHROOM, 100,   15, 4,   0,  7, false",
             "TANGLE_KELP, 100, 2000, 0,  25, 15, true",
             "REPEATER,    100,   25, 2, 200, 10, false",
+            // tanaman baru
+            "CHERRY_BOMB, 100, 1800, 0, 150, 50, false",
+            "POTATO_MINE, 100, 1800, 0,  25, 30, false",
+            "JALAPENO,    100, 1800, 0, 125, 50, false",
+            "SUN_SHROOM,  100,    0, 0,  25,  8, false",
+            "FUME_SHROOM, 100,   20, 4,  75,  8, false",
     })
-    void plantStatsMatchDocumentation(PlantType type, int health, int damage, double speed, int cost, int cooldown,
-            boolean aquatic) {
+    void plantStats(PlantType type, int health, int damage, double speed, int cost, int cooldown, boolean aquatic) {
         Plant plant = type.create(0, 0);
         assertEquals(health, plant.getHealth());
         assertEquals(damage, plant.getAttackDamage());
@@ -43,7 +48,7 @@ class StatsTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            // type, health, damage, attackSpeed, aquatic
+            // type, total health (badan + armor), damage, attackSpeed, aquatic
             "NORMAL,              125, 100, 1, false",
             "CONEHEAD,            250, 100, 1, false",
             "BUCKETHEAD,          300, 100, 1, false",
@@ -55,16 +60,16 @@ class StatsTest {
             "SNORKEL,             100, 100, 1, true",
             "DOLPHIN_RIDER,       175, 100, 1, true",
     })
-    void zombieStatsMatchDocumentation(ZombieType type, int health, int damage, double speed, boolean aquatic) {
+    void zombieStats(ZombieType type, int totalHealth, int damage, double speed, boolean aquatic) {
         Zombie zombie = type.create(0, 0);
-        assertEquals(health, zombie.getHealth());
+        assertEquals(totalHealth, zombie.getTotalHealth());
         assertEquals(damage, zombie.getAttackDamage());
         assertEquals(speed, zombie.getAttackSpeed());
         assertEquals(aquatic, zombie.isAquatic());
     }
 
     @ParameterizedTest
-    @CsvSource({ "PEASHOOTER", "SUNFLOWER", "LILY_PAD" })
+    @CsvSource({ "PEASHOOTER", "SUNFLOWER", "LILY_PAD", "CHERRY_BOMB" })
     void factoryPlacesPlantAtPosition(PlantType type) {
         Plant plant = type.create(120, 180);
         assertEquals(120, plant.getX());
