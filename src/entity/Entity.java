@@ -2,15 +2,21 @@ package entity;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
-import java.awt.Composite;
 import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 
 import game.Assets;
 import game.Board;
+import game.Game;
+import game.Sprite;
 
 // Kelas dasar untuk Plant dan Zombie
 public abstract class Entity implements Updatable {
+    public static final int FLASH_TICKS = 8; // lama kilat putih saat terkena serangan
+    protected static final int TILE = Board.TILE_SIZE;
+
     protected final String name;
     protected int health;
     protected final int maxHealth;
@@ -18,11 +24,15 @@ public abstract class Entity implements Updatable {
     protected int attackDamage;
     protected double attackSpeed; // detik per serangan
     protected int x, y; // posisi pixel (pojok kiri atas tile)
-    protected String img;
-    protected int timer = 0; // dalam tick
+    protected String spriteId;
+    protected int timer = 0; // tick
+    protected int age = 0; // tick sejak dibuat
+    protected int hitFlash = 0;
+    protected DamageType lastDamage = DamageType.NORMAL;
+    private double animMs = 0; // waktu animasi (ms), ikut pause & kecepatan
 
     public Entity(String name, int health, boolean aquatic, int attackDamage, double attackSpeed, int x, int y,
-            String img) {
+            String spriteId) {
         this.name = name;
         this.health = health;
         this.maxHealth = health;
@@ -31,11 +41,17 @@ public abstract class Entity implements Updatable {
         this.attackSpeed = attackSpeed;
         this.x = x;
         this.y = y;
-        this.img = img;
+        this.spriteId = spriteId;
     }
 
-    public void takeDamage(int amount) {
+    public final void takeDamage(int amount) {
+        takeDamage(amount, DamageType.NORMAL);
+    }
+
+    public void takeDamage(int amount, DamageType type) {
         health -= amount;
+        lastDamage = type;
+        hitFlash = FLASH_TICKS;
     }
 
     public boolean isDead() {
@@ -46,9 +62,71 @@ public abstract class Entity implements Updatable {
     public void update(Board board) {
     }
 
-    // Gambar yang dipakai sekarang; bisa di-override (misalnya Wall-nut yang retak)
-    protected String getImagePath() {
-        return img;
+    // Dipanggil Board tiap tick setelah update: memajukan waktu animasi
+    public final void tickAnimation() {
+        age++;
+        if (hitFlash > 0) {
+            hitFlash--;
+        }
+        animMs += 1000.0 / Game.UPS * animationSpeed();
+    }
+
+    // ------------------------------------------------------------------ tampilan
+
+    protected String getSpriteId() {
+        return spriteId;
+    }
+
+    protected Sprite sprite() {
+        return Assets.sprite(getSpriteId());
+    }
+
+    // Sprite yang sedang dipakai (untuk Almanac)
+    public Sprite getSprite() {
+        return sprite();
+    }
+
+    // Kecepatan animasi relatif (misalnya 0.5 saat diperlambat)
+    protected double animationSpeed() {
+        return 1.0;
+    }
+
+    protected long animationTimeMs() {
+        return (long) animMs;
+    }
+
+    // Ukuran maksimal gambar di layar; gambar dirata tengah-bawah di dalam tile
+    protected int drawMaxWidth() {
+        return TILE;
+    }
+
+    protected int drawMaxHeight() {
+        return TILE - 4;
+    }
+
+    public Rectangle drawBounds(int imageWidth, int imageHeight) {
+        double scale = Math.min((double) drawMaxWidth() / imageWidth, (double) drawMaxHeight() / imageHeight);
+        int w = (int) Math.round(imageWidth * scale);
+        int h = (int) Math.round(imageHeight * scale);
+        return new Rectangle(x + (TILE - w) / 2, y + TILE - 2 - h, w, h);
+    }
+
+    // Hook animasi: transformasi (goyang, membal, melompat) sebelum gambar digambar
+    protected void applyTransform(Graphics2D g, Rectangle bounds) {
+    }
+
+    // Hook warna: tint di atas gambar (biru saat lambat, gelap saat tidur), atau null
+    protected Color overlayTint() {
+        return null;
+    }
+
+    public BufferedImage currentFrame() {
+        return sprite().frameAt(animationTimeMs(), true);
+    }
+
+    public Rectangle currentBounds() {
+        BufferedImage frame = currentFrame();
+        return drawBounds(frame.getWidth(), frame.getHeight());
     }
 
     public void draw(Graphics2D g) {
@@ -60,44 +138,57 @@ public abstract class Entity implements Updatable {
         drawSprite(g, alpha);
     }
 
-    // Gambar sprite di dalam tile: rasio dijaga, rata tengah-bawah
     protected void drawSprite(Graphics2D g, float alpha) {
-        Image image = Assets.get(getImagePath());
-        if (image == null) {
+        Sprite sprite = sprite();
+        if (sprite.isEmpty()) {
             return;
         }
-        int w = image.getWidth(null);
-        int h = image.getHeight(null);
-        if (w <= 0 || h <= 0) {
-            return;
-        }
-        double scale = Math.min((double) Board.TILE_SIZE / w, (double) Board.TILE_SIZE / h);
-        int dw = (int) Math.round(w * scale);
-        int dh = (int) Math.round(h * scale);
-        int dx = x + (Board.TILE_SIZE - dw) / 2;
-        int dy = y + Board.TILE_SIZE - dh;
+        int index = sprite.frameIndex(animationTimeMs(), true);
+        Rectangle r = drawBounds(sprite.getWidth(), sprite.getHeight());
+        // pakai versi sprite yang sudah seukuran tampilan (cepat, tanpa scaling tiap frame)
+        Sprite fitted = sprite.scaledTo(r.width, r.height);
 
-        Composite old = g.getComposite();
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         if (alpha < 1f) {
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
         }
-        g.drawImage(image, dx, dy, dw, dh, Assets.observer());
-        g.setComposite(old);
+        applyTransform(g2, r);
+        g2.drawImage(fitted.frame(index), r.x, r.y, null);
+        Color tint = overlayTint();
+        if (tint != null) {
+            g2.drawImage(fitted.tinted(index, tint), r.x, r.y, null);
+        }
+        if (hitFlash > 0) {
+            int strength = 150 * hitFlash / FLASH_TICKS;
+            g2.drawImage(fitted.tinted(index, new Color(255, 255, 255, 25 * (strength / 25))), r.x, r.y, null);
+        }
+        g2.dispose();
     }
 
     // Bar HP kecil di atas sprite, hanya muncul kalau sudah terkena damage
     public void drawHealthBar(Graphics2D g) {
-        if (health >= maxHealth || health <= 0) {
+        drawBar(g, health, 0, maxHealth, 0);
+    }
+
+    // armor = HP pelindung (abu-abu) di kanan HP badan
+    protected void drawBar(Graphics2D g, int body, int armor, int max, int topOffset) {
+        if (body + armor >= max || body <= 0) {
             return;
         }
         int barWidth = 40;
-        int bx = x + (Board.TILE_SIZE - barWidth) / 2;
-        int by = y + 2;
-        double ratio = (double) health / maxHealth;
+        int bx = x + (TILE - barWidth) / 2;
+        int by = y + 2 + topOffset;
         g.setColor(new Color(0, 0, 0, 160));
         g.fillRect(bx - 1, by - 1, barWidth + 2, 6);
+        double ratio = (double) body / max;
         g.setColor(ratio > 0.5 ? new Color(80, 200, 60) : ratio > 0.25 ? new Color(240, 170, 30) : new Color(220, 50, 40));
-        g.fillRect(bx, by, (int) Math.ceil(barWidth * ratio), 4);
+        int bodyWidth = (int) Math.ceil(barWidth * ratio);
+        g.fillRect(bx, by, bodyWidth, 4);
+        if (armor > 0) {
+            g.setColor(new Color(200, 200, 210));
+            g.fillRect(bx + bodyWidth, by, (int) Math.ceil(barWidth * (double) armor / max), 4);
+        }
     }
 
     // getter and setter
@@ -134,11 +225,24 @@ public abstract class Entity implements Updatable {
     }
 
     public int getCol() {
-        return x / Board.TILE_SIZE;
+        return x / TILE;
     }
 
     public int getRow() {
-        return y / Board.TILE_SIZE;
+        return y / TILE;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    // true selama efek kilat putih (baru terkena serangan)
+    public boolean isFlashing() {
+        return hitFlash > 0;
+    }
+
+    public DamageType getLastDamage() {
+        return lastDamage;
     }
 
     public void setHealth(int health) {

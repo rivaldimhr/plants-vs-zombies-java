@@ -6,7 +6,7 @@ import game.Board;
 public class Repeater extends ShooterPlant {
 
     public Repeater(int x, int y) {
-        super("Repeater", 100, false, 25, 2, 200, -1, 10, x, y, "image/sprites/repeater.gif");
+        super("Repeater", 100, false, 25, 2, 200, -1, 10, x, y, "repeater");
     }
 
     // Menembak 2 kacang sekaligus (kacang kedua sedikit di belakang)

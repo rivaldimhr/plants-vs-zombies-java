@@ -28,4 +28,11 @@ public interface ScreenMethod {
 	default void update() {
 	}
 
+	// Dipanggil saat layar mulai ditampilkan / ditinggalkan
+	default void onShow() {
+	}
+
+	default void onHide() {
+	}
+
 }

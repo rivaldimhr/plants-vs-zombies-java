@@ -9,14 +9,16 @@ import entity.zombie.Zombie;
 import game.Board;
 
 public abstract class Plant extends Entity {
+    private static final Color SLEEP_TINT = new Color(20, 20, 70, 110);
+
     protected final int cost;
     protected final int cooldown; // detik
     protected final int range; // dalam tile, -1 = satu baris penuh, 0 = tidak menyerang
     private boolean asleep = false;
 
     public Plant(String name, int health, boolean aquatic, int attackDamage, double attackSpeed, int cost, int range,
-            int cooldown, int x, int y, String img) {
-        super(name, health, aquatic, attackDamage, attackSpeed, x, y, img);
+            int cooldown, int x, int y, String spriteId) {
+        super(name, health, aquatic, attackDamage, attackSpeed, x, y, spriteId);
         this.cost = cost;
         this.cooldown = cooldown;
         this.range = range;
@@ -49,22 +51,40 @@ public abstract class Plant extends Entity {
             return false;
         }
         for (Zombie zombie : board.getZombies()) {
-            int distance = zombie.getX() - x;
-            if (zombie.getY() == y && zombie.isTargetable() && distance >= 0
-                    && (range == -1 || distance <= range * Board.TILE_SIZE)) {
+            if (inRange(zombie)) {
                 return true;
             }
         }
         return false;
     }
 
+    protected boolean inRange(Zombie zombie) {
+        int distance = zombie.getX() - x;
+        return zombie.getY() == y && zombie.isTargetable() && !zombie.isDead() && distance >= 0
+                && (range == -1 || distance <= range * TILE);
+    }
+
+    @Override
+    protected double animationSpeed() {
+        return asleep ? 0 : 1;
+    }
+
+    @Override
+    protected Color overlayTint() {
+        return asleep ? SLEEP_TINT : null;
+    }
+
     @Override
     public void draw(Graphics2D g) {
-        drawSprite(g, asleep ? 0.55f : 1f);
+        super.draw(g);
         if (asleep) {
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 12));
-            g.drawString("z z", x + 36, y + 16);
+            // huruf z melayang naik
+            g.setFont(new Font("Arial", Font.BOLD, 11));
+            for (int i = 0; i < 2; i++) {
+                int phase = (age / 2 + i * 30) % 60;
+                g.setColor(new Color(255, 255, 255, 230 - phase * 3));
+                g.drawString("z", x + 38 + phase / 6, y + 22 - phase / 3);
+            }
         }
     }
 

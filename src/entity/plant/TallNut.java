@@ -1,20 +1,25 @@
 package entity.plant;
 
-// Penahan yang lebih kuat; tidak bisa dilompati Pole Vaulting Zombie
+// Penahan yang lebih kuat dan tinggi; tidak bisa dilompati Pole Vaulting Zombie
 public class TallNut extends Plant {
 
     public TallNut(int x, int y) {
-        super("Tall-nut", 2000, false, 0, 0, 125, 0, 30, x, y, "image/sprites/TallNut1.gif");
+        super("Tall-nut", 2000, false, 0, 0, 125, 0, 30, x, y, "tallnut");
     }
 
     @Override
-    protected String getImagePath() {
+    protected String getSpriteId() {
         double ratio = (double) health / maxHealth;
         if (ratio > 2.0 / 3) {
-            return "image/sprites/TallNut1.gif";
+            return "tallnut";
         } else if (ratio > 1.0 / 3) {
-            return "image/sprites/Tallnut2.gif";
+            return "tallnut_cracked1";
         }
-        return "image/sprites/Tallnut3.gif";
+        return "tallnut_cracked2";
+    }
+
+    @Override
+    protected int drawMaxHeight() {
+        return 76;
     }
 }
