@@ -12,6 +12,37 @@ Pilih 6 tanaman, tanam di halaman (darat dan kolam), kumpulkan sun, dan tahan ge
 | ![Malam](docs/screenshots/malam.png) | ![Jalapeno](docs/screenshots/jalapeno.png) |
 | ![Pilih level](docs/screenshots/pilih-level.png) | ![Almanac](docs/screenshots/almanac.png) |
 
+## Quick Start (How to Run)
+
+Butuh **JDK 17+** (cek: `java -version` dan `javac -version`). Salin-tempel sesuai sistem operasi:
+
+**Windows (CMD / PowerShell)**
+```bat
+git clone https://github.com/rivaldimhr/plants-vs-zombies-java.git
+cd plants-vs-zombies-java
+run.bat
+```
+
+**Linux / macOS / Git Bash**
+```sh
+git clone https://github.com/rivaldimhr/plants-vs-zombies-java.git
+cd plants-vs-zombies-java
+./run.sh
+```
+
+**Menjalankan unit test**
+```sh
+./test.sh        # Windows: test.bat
+```
+
+**Membuat & menjalankan JAR (satu file, bisa dibagikan)**
+```sh
+./build-jar.sh   # Windows: build-jar.bat
+java -jar dist/plants-vs-zombies.jar
+```
+
+Detail lengkap (perintah manual, IDE, troubleshooting) ada di bagian [Cara Menjalankan](#cara-menjalankan).
+
 ## Fitur
 
 - **6 level petualangan + mode Endless.** Level siang dan malam, wave dengan bendera, tulisan *"A huge wave of zombies is approaching!"* dan **FINAL WAVE**, serta progress bar wave.
