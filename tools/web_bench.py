@@ -23,13 +23,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 from serve import make_server  # noqa: E402
 
 CONFIGS = {
-    "tanpa preload (seperti sebelumnya)": "fps=120&fast=0&scale=1.5&preload=0",
-    "preload, 120 fps, kualitas tinggi": "fps=120&fast=0&scale=1.5",
-    "preload, 60 fps, render cepat": "fps=60&fast=1&scale=1.5",
-    "preload, 40 fps, render cepat": "fps=40&fast=1&scale=1.5",
+    "lama: 120 fps, kualitas tinggi, tanpa preload": "fps=120&fast=0&scale=1.5&preload=0",
+    "60 fps, render cepat, tanpa preload": "fps=60&fast=1&scale=1.5&preload=0",
+    "60 fps, render cepat, preload": "fps=60&fast=1&scale=1.5",
+    "40 fps, render cepat, preload": "fps=40&fast=1&scale=1.5",
 }
 MENU_START, LEVEL_1, PLAY = (328, 322), (123, 120), (607, 22)
-CARD_PEASHOOTER = (69, 35)   # slot deck ke-2 di permainan
+CARD_SUNFLOWER = (81, 35)    # slot deck pertama (Sunflower, 50 sun: bisa dipilih di awal)
 WAIT_AFTER_MENU = 8.0        # waktu "membaca menu" sebelum klik START (memberi kesempatan preload)
 PICKS = [(208, 185), (124, 185), (376, 185), (292, 185), (460, 185), (208, 265)]
 
@@ -56,7 +56,7 @@ def run(browser, base, name, qs):
     ctx = browser.new_context(viewport={"width": 1280, "height": 900})
     page = ctx.new_page()
     perf = []
-    page.on("console", lambda m: "PVZ_PERF" in m.text and perf.append(m.text.strip()))
+    page.on("console", lambda m: "PVZ_" in m.text and perf.append(m.text.strip()))
     t0 = time.time()
     page.goto(f"{base}?autoplay=1&perf=1&{qs}")
     res = {"config": name, "query": qs}
@@ -79,10 +79,10 @@ def run(browser, base, name, qs):
         page.wait_for_timeout(250)
     res["klik_play_ms"] = click_latency(page, stage, PLAY, scale, tmp)
     page.wait_for_timeout(4000)  # intro Ready-Set-Plant
-    res["klik_kartu_ms"] = click_latency(page, stage, CARD_PEASHOOTER, scale, tmp)
+    res["klik_kartu_ms"] = click_latency(page, stage, CARD_SUNFLOWER, scale, tmp)
     n = len(perf)
     page.wait_for_timeout(16_000)
-    game = [l for l in perf[n:] if "GAME_LEVEL" in l]
+    game = [l for l in perf[n:] if "GAME_LEVEL" in l and "PVZ_PERF" in l]
     vals = [tuple(map(float, re.search(r"ups=([\d.]+) fps=([\d.]+)", l).groups())) for l in game]
     if vals:
         res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
@@ -90,7 +90,7 @@ def run(browser, base, name, qs):
     text = page.evaluate("(document.getElementById('console') || {}).textContent || ''")
     lines = [l for l in text.splitlines() if l.startswith("PVZ_")] + perf
     if not vals:
-        game = [l for l in lines if "GAME_LEVEL" in l]
+        game = [l for l in lines if "GAME_LEVEL" in l and "PVZ_PERF" in l]
         vals = [tuple(map(float, re.search(r"ups=([\d.]+) fps=([\d.]+)", l).groups())) for l in game]
         if vals:
             res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
