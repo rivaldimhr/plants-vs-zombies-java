@@ -23,12 +23,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 from serve import make_server  # noqa: E402
 
 CONFIGS = {
-    "lama (120 fps, kualitas tinggi, 1.5x)": "fps=120&fast=0&scale=1.5",
-    "30 fps, render cepat, 1.5x": "fps=30&fast=1&scale=1.5",
-    "45 fps, render cepat, 1.5x": "fps=45&fast=1&scale=1.5",
-    "30 fps, render cepat, 1x": "fps=30&fast=1&scale=1",
+    "tanpa preload (seperti sebelumnya)": "fps=120&fast=0&scale=1.5&preload=0",
+    "preload, 120 fps, kualitas tinggi": "fps=120&fast=0&scale=1.5",
+    "preload, 60 fps, render cepat": "fps=60&fast=1&scale=1.5",
+    "preload, 40 fps, render cepat": "fps=40&fast=1&scale=1.5",
 }
 MENU_START, LEVEL_1, PLAY = (328, 322), (123, 120), (607, 22)
+CARD_PEASHOOTER = (69, 35)   # slot deck ke-2 di permainan
+WAIT_AFTER_MENU = 8.0        # waktu "membaca menu" sebelum klik START (memberi kesempatan preload)
 PICKS = [(208, 185), (124, 185), (376, 185), (292, 185), (460, 185), (208, 265)]
 
 
@@ -65,7 +67,7 @@ def run(browser, base, name, qs):
         ctx.close()
         return res
     res["detik_sampai_menu"] = round(time.time() - t0, 1)
-    page.wait_for_timeout(1500)
+    page.wait_for_timeout(int(WAIT_AFTER_MENU * 1000))
     stage = page.locator("#stage")
     tmp = tempfile.mktemp(suffix=".png")
     res["klik_start_ms"] = click_latency(page, stage, MENU_START, scale, tmp)
@@ -76,6 +78,8 @@ def run(browser, base, name, qs):
         stage.click(position={"x": p[0] * scale, "y": p[1] * scale})
         page.wait_for_timeout(250)
     res["klik_play_ms"] = click_latency(page, stage, PLAY, scale, tmp)
+    page.wait_for_timeout(4000)  # intro Ready-Set-Plant
+    res["klik_kartu_ms"] = click_latency(page, stage, CARD_PEASHOOTER, scale, tmp)
     n = len(perf)
     page.wait_for_timeout(16_000)
     game = [l for l in perf[n:] if "GAME_LEVEL" in l]
@@ -83,7 +87,16 @@ def run(browser, base, name, qs):
     if vals:
         res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
         res["fps_saat_main"] = round(sum(v[1] for v in vals) / len(vals), 1)
-    res["log_perf"] = perf[-6:]
+    text = page.evaluate("(document.getElementById('console') || {}).textContent || ''")
+    lines = [l for l in text.splitlines() if l.startswith("PVZ_")] + perf
+    if not vals:
+        game = [l for l in lines if "GAME_LEVEL" in l]
+        vals = [tuple(map(float, re.search(r"ups=([\d.]+) fps=([\d.]+)", l).groups())) for l in game]
+        if vals:
+            res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
+            res["fps_saat_main"] = round(sum(v[1] for v in vals) / len(vals), 1)
+    res["preload"] = next((l for l in lines if l.startswith("PVZ_PRELOAD")), None)
+    res["log_perf"] = lines[-6:]
     ctx.close()
     return res
 

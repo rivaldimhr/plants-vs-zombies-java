@@ -105,6 +105,8 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
   </div>
 </footer>
 
+<!-- CheerpJ menulis System.out ke elemen #console bila ada (disembunyikan; dibaca test kinerja) -->
+<pre id="console" hidden></pre>
 <script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
 <script>
 (function () {
@@ -173,7 +175,8 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
         "pvz.scale=" + (q.get("scale") || "1.5"),
         "pvz.fps=" + (q.get("fps") || "120"),
         "pvz.fastRender=" + (q.get("fast") === "1"),
-        "pvz.perfLog=" + q.has("perf")
+        "pvz.perfLog=" + q.has("perf"),
+        "pvz.preload=" + (q.get("preload") !== "0")
       ];
       await cheerpjInit({ version: 17, javaProperties: props });
       cheerpjCreateDisplay(-1, -1, display);

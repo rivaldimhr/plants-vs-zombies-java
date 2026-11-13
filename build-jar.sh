@@ -12,6 +12,8 @@ for f in MENU.png HELP.png "INVENTORY (7).png" "BACKGROUND DAY.png" "BACKGROUND 
 done
 cp -r image/sprites image/cards image/ui build/classes/image/
 cp -r sound build/classes/
+# daftar gambar untuk dimuat di latar belakang (Assets.preloadInBackground): latar dulu, lalu UI, kartu, sprite
+(cd build/classes && for d in image/IMAGE image/ui image/cards image/sprites; do find "$d" -type f \( -name '*.png' -o -name '*.jpg' \) | sort; done) > build/classes/image/preload.txt
 jar --create --file dist/plants-vs-zombies.jar --main-class game.Game -C build/classes .
 rm -rf build
 echo "Selesai: dist/plants-vs-zombies.jar"

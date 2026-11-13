@@ -52,6 +52,40 @@ public final class Assets {
         }
     }
 
+    /**
+     * Muat semua gambar yang tercantum di image/preload.txt (dibuat build-jar.sh) di thread latar belakang,
+     * supaya layar berikutnya tidak tersendat saat pertama kali muncul. Terasa sekali di versi browser,
+     * di mana decode PNG jauh lebih lambat daripada di JVM desktop. Kalau daftar tidak ada (jalan dari folder), tidak melakukan apa-apa.
+     */
+    public static Thread preloadInBackground() {
+        URL list = Assets.class.getResource("/image/preload.txt");
+        if (list == null || !Boolean.parseBoolean(System.getProperty("pvz.preload", "true"))) {
+            return null;
+        }
+        Thread t = new Thread(() -> {
+            long start = System.nanoTime();
+            int count = 0;
+            try (java.io.BufferedReader r = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(list.openStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = r.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty() && get(line) != null) {
+                        count++;
+                    }
+                    Thread.yield(); // beri giliran ke game loop & input
+                }
+            } catch (IOException e) {
+                System.err.println("Preload gagal: " + e.getMessage());
+            }
+            System.out.printf("PVZ_PRELOAD %d gambar dalam %d ms%n", count, (System.nanoTime() - start) / 1_000_000);
+        }, "preload-assets");
+        t.setDaemon(true);
+        t.setPriority(Thread.MIN_PRIORITY);
+        t.start();
+        return t;
+    }
+
     // Gambar statis (background, kartu, UI). Return null kalau tidak ada.
     public static BufferedImage get(String path) {
         if (path == null || path.isEmpty()) {
