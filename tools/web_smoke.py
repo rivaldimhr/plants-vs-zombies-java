@@ -49,12 +49,15 @@ def main(site, out):
     url = f"http://127.0.0.1:{srv.server_address[1]}/pvz/?autoplay=1"
 
     report = {"url_path": "/pvz/", "checks": {}, "page_errors": [], "console_errors": []}
+    console_all = []
     ok = True
     with sync_playwright() as p:
         b = p.chromium.launch()
         page = b.new_page(viewport={"width": 1280, "height": 900})
         page.on("pageerror", lambda e: report["page_errors"].append(str(e)))
-        page.on("console", lambda m: m.type == "error" and report["console_errors"].append(m.text))
+        page.on("console", lambda m: (console_all.append(f"[{m.type}] {m.text}"),
+                                      m.type == "error" and report["console_errors"].append(m.text)))
+        page.on("requestfailed", lambda r: console_all.append(f"[requestfailed] {r.url} {r.failure}"))
         t0 = time.time()
         page.goto(url)
         try:
@@ -63,6 +66,12 @@ def main(site, out):
             report["checks"]["game_loaded"] = False
             page.screenshot(path=str(out / "gagal.png"))
             print("Game tidak termuat:", e)
+            print("Overlay:", page.evaluate("document.getElementById('overlay').innerText"))
+            print("Isi #display:", page.evaluate("document.getElementById('display').innerHTML.slice(0, 1500)"))
+            print("Elemen di body:", page.evaluate("[...document.body.querySelectorAll('*')].map(e=>e.tagName).filter(t=>!['P','LI','A','B','KBD','SPAN','I','CODE','UL','H3','H1','H2','DIV'].includes(t)).join(',')"))
+            print("Log konsol (60 terakhir):")
+            for line in console_all[-60:]:
+                print("  ", line[:300])
             ok = False
         if ok:
             report["seconds_to_ready"] = round(time.time() - t0, 1)
