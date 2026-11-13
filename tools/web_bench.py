@@ -23,14 +23,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 from serve import make_server  # noqa: E402
 
 CONFIGS = {
-    "lama: 120 fps, kualitas tinggi, tanpa preload": "fps=120&fast=0&scale=1.5&preload=0",
-    "60 fps, render cepat, tanpa preload": "fps=60&fast=1&scale=1.5&preload=0",
-    "60 fps, render cepat, preload": "fps=60&fast=1&scale=1.5",
-    "40 fps, render cepat, preload": "fps=40&fast=1&scale=1.5",
+    "lama: 120 fps, kualitas tinggi, tanpa pemanasan": "fps=120&fast=0&scale=1.5&warmup=0",
+    "60 fps, render cepat, tanpa pemanasan": "fps=60&fast=1&scale=1.5&warmup=0",
+    "60 fps, render cepat, pemanasan": "fps=60&fast=1&scale=1.5",
 }
 MENU_START, LEVEL_1, PLAY = (328, 322), (123, 120), (607, 22)
 CARD_SUNFLOWER = (81, 35)    # slot deck pertama (Sunflower, 50 sun: bisa dipilih di awal)
-WAIT_AFTER_MENU = 8.0        # waktu "membaca menu" sebelum klik START (memberi kesempatan preload)
+WAIT_AFTER_MENU = 8.0        # waktu "membaca menu" sebelum klik START (memberi kesempatan pemanasan)
 PICKS = [(208, 185), (124, 185), (376, 185), (292, 185), (460, 185), (208, 265)]
 
 
@@ -121,9 +120,8 @@ def run(browser, base, name, qs):
         if vals:
             res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
             res["fps_saat_main"] = round(sum(v[1] for v in vals) / len(vals), 1)
-    res["preload"] = next((l for l in lines if l.startswith("PVZ_PRELOAD")), None)
     res["first_paint"] = [l for l in lines if l.startswith("PVZ_FIRSTPAINT")]
-    res["preload_progress"] = [l for l in lines if l.startswith("PVZ_PRELOAD")][-3:]
+    res["warmup"] = [l for l in lines if l.startswith("PVZ_WARMUP")]
     res["log_perf"] = [l for l in lines if l.startswith("PVZ_PERF")][-4:]
     ctx.close()
     return res

@@ -61,12 +61,7 @@ public class GameScreen extends JPanel {
 		return ms;
 	}
 
-	@Override
-	public void paintComponent(Graphics g) {
-		long t0 = System.nanoTime();
-		super.paintComponent(g);
-		frames++;
-		Graphics2D g2 = (Graphics2D) g;
+	static void applyHints(Graphics2D g2) {
 		if (FAST_RENDER) {
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
@@ -75,6 +70,15 @@ public class GameScreen extends JPanel {
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		}
+	}
+
+	@Override
+	public void paintComponent(Graphics g) {
+		long t0 = System.nanoTime();
+		super.paintComponent(g);
+		frames++;
+		Graphics2D g2 = (Graphics2D) g;
+		applyHints(g2);
 		g2.scale(scale, scale);
 		g2.clipRect(0, 0, Board.WIDTH, Board.HEIGHT);
 		States state = game.getStates();

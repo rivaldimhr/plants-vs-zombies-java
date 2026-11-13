@@ -69,7 +69,7 @@ public class Game extends JFrame implements Runnable {
 			Game game = new Game();
 			game.gameScreen.initInputs();
 			game.start();
-			Assets.preloadInBackground();
+			game.scheduleWarmUp();
 		});
 	}
 
@@ -127,6 +127,61 @@ public class Game extends JFrame implements Runnable {
 			} catch (InterruptedException e) {
 				return;
 			}
+		}
+	}
+
+	/**
+	 * Pemanasan: selagi pemain di menu, gambar layar pilih level & inventory sekali di belakang layar (menyiapkan
+	 * font dan gambar berskala), lalu decode semua gambar satu per satu. Berjalan di EDT lewat Swing Timer, jadi
+	 * aman tanpa sinkronisasi, dan berhenti sementara selama permainan berlangsung agar tidak tersendat.
+	 * Matikan dengan -Dpvz.warmup=false.
+	 */
+	private void scheduleWarmUp() {
+		if (!Boolean.parseBoolean(System.getProperty("pvz.warmup", "true"))) {
+			return;
+		}
+		java.util.Deque<Runnable> steps = new java.util.ArrayDeque<>();
+		steps.add(() -> renderOffscreen(screens.get(States.LEVEL_SELECT)));
+		steps.add(() -> renderOffscreen(screens.get(States.INVENTORY)));
+		for (String path : Assets.preloadList()) {
+			steps.add(() -> Assets.get(path));
+		}
+		int total = steps.size();
+		long start = System.nanoTime();
+		javax.swing.Timer timer = new javax.swing.Timer(40, null);
+		timer.addActionListener(e -> {
+			if (states == States.GAME_LEVEL) {
+				return; // jangan ganggu permainan
+			}
+			Runnable step = steps.poll();
+			if (step == null) {
+				timer.stop();
+				if (PERF_LOG) {
+					System.out.printf("PVZ_WARMUP %d langkah selesai dalam %d ms%n", total, (System.nanoTime() - start) / 1_000_000);
+				}
+				return;
+			}
+			try {
+				step.run();
+			} catch (RuntimeException ex) {
+				System.err.println("Pemanasan dilewati: " + ex);
+			}
+		});
+		timer.setInitialDelay(1500); // biarkan menu tampil dulu
+		timer.start();
+	}
+
+	private void renderOffscreen(ScreenMethod screen) {
+		double s = gameScreen.getScale();
+		java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+				(int) Math.round(Board.WIDTH * s), (int) Math.round(Board.HEIGHT * s), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+		java.awt.Graphics2D g = img.createGraphics();
+		try {
+			GameScreen.applyHints(g);
+			g.scale(s, s);
+			screen.render(g);
+		} finally {
+			g.dispose();
 		}
 	}
 

@@ -176,7 +176,7 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
         "pvz.fps=" + (q.get("fps") || "120"),
         "pvz.fastRender=" + (q.get("fast") === "1"),
         "pvz.perfLog=" + q.has("perf"),
-        "pvz.preload=" + (q.get("preload") !== "0")
+        "pvz.warmup=" + (q.get("warmup") !== "0")
       ];
       await cheerpjInit({ version: 17, javaProperties: props });
       cheerpjCreateDisplay(-1, -1, display);

@@ -53,40 +53,28 @@ public final class Assets {
     }
 
     /**
-     * Muat semua gambar yang tercantum di image/preload.txt (dibuat build-jar.sh) di thread latar belakang,
-     * supaya layar berikutnya tidak tersendat saat pertama kali muncul. Terasa sekali di versi browser,
-     * di mana decode PNG jauh lebih lambat daripada di JVM desktop. Kalau daftar tidak ada (jalan dari folder), tidak melakukan apa-apa.
+     * Daftar semua gambar di JAR (image/preload.txt, dibuat build-jar.sh), dipakai Game untuk "pemanasan":
+     * gambar di-decode sedikit demi sedikit selagi pemain di menu, supaya layar berikutnya tidak tersendat.
+     * Terasa sekali di versi browser, di mana decode PNG jauh lebih lambat. Kosong bila dijalankan dari folder.
      */
-    public static Thread preloadInBackground() {
+    public static java.util.List<String> preloadList() {
         URL list = Assets.class.getResource("/image/preload.txt");
-        if (list == null || !Boolean.parseBoolean(System.getProperty("pvz.preload", "true"))) {
-            return null;
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        if (list == null) {
+            return paths;
         }
-        Thread t = new Thread(() -> {
-            long start = System.nanoTime();
-            int count = 0;
-            try (java.io.BufferedReader r = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(list.openStream(), java.nio.charset.StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = r.readLine()) != null) {
-                    line = line.trim();
-                    if (!line.isEmpty() && get(line) != null) {
-                        count++;
-                        if (count % 10 == 0) {
-                            System.out.printf("PVZ_PRELOAD_PROGRESS %d gambar, %d ms%n", count, (System.nanoTime() - start) / 1_000_000);
-                        }
-                    }
-                    Thread.yield(); // beri giliran ke game loop & input
+        try (java.io.BufferedReader r = new java.io.BufferedReader(
+                new java.io.InputStreamReader(list.openStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (!line.isBlank()) {
+                    paths.add(line.trim());
                 }
-            } catch (IOException e) {
-                System.err.println("Preload gagal: " + e.getMessage());
             }
-            System.out.printf("PVZ_PRELOAD %d gambar dalam %d ms%n", count, (System.nanoTime() - start) / 1_000_000);
-        }, "preload-assets");
-        t.setDaemon(true);
-        t.setPriority(Thread.MIN_PRIORITY);
-        t.start();
-        return t;
+        } catch (IOException e) {
+            System.err.println("Daftar preload tidak terbaca: " + e.getMessage());
+        }
+        return paths;
     }
 
     // Gambar statis (background, kartu, UI). Return null kalau tidak ada.
