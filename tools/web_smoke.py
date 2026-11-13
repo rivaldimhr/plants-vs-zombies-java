@@ -7,8 +7,6 @@ dan klik START benar-benar berpindah ke layar pilih level.
 Halaman disajikan di sub-folder /pvz/ (seperti di portofolio) untuk menguji perhitungan path JAR.
 Keluar dengan kode 1 bila gagal. Butuh: playwright, pillow, dan akses internet (CheerpJ dari CDN).
 """
-import functools
-import http.server
 import json
 import shutil
 import sys
@@ -20,14 +18,12 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageStat
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, str(Path(__file__).parent))
+from serve import make_server  # noqa: E402
+
 SCALE = 1.5
 START = (328 * SCALE, 322 * SCALE)    # tombol START di menu
 LEVEL_1 = (123 * SCALE, 120 * SCALE)  # kartu Level 1 di layar pilih level
-
-
-class Quiet(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *a):
-        pass
 
 
 def brightness(path):
@@ -44,7 +40,7 @@ def main(site, out):
     out.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp())
     shutil.copytree(site, root / "pvz", ignore=shutil.ignore_patterns("check"))
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(root)))
+    srv = make_server(root)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{srv.server_address[1]}/pvz/?autoplay=1"
 
