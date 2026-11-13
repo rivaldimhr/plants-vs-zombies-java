@@ -72,6 +72,9 @@ public final class Assets {
                     line = line.trim();
                     if (!line.isEmpty() && get(line) != null) {
                         count++;
+                        if (count % 10 == 0) {
+                            System.out.printf("PVZ_PRELOAD_PROGRESS %d gambar, %d ms%n", count, (System.nanoTime() - start) / 1_000_000);
+                        }
                     }
                     Thread.yield(); // beri giliran ke game loop & input
                 }

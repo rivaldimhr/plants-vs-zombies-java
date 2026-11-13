@@ -16,7 +16,7 @@ public class Game extends JFrame implements Runnable {
 	// Frame per detik; bisa diturunkan lewat -Dpvz.fps=30 (versi browser) supaya CPU tidak habis untuk menggambar
 	private static final double FPS_SET = Math.max(10, Math.min(240, Integer.getInteger("pvz.fps", 120)));
 	// -Dpvz.perfLog=true: cetak update & frame per detik tiap 5 detik (untuk mengukur kinerja)
-	private static final boolean PERF_LOG = Boolean.getBoolean("pvz.perfLog");
+	static final boolean PERF_LOG = Boolean.getBoolean("pvz.perfLog");
 
 	// Hasil permainan terakhir, ditampilkan di layar Win / Game Over
 	public record GameResult(Level level, boolean won, int wavesSurvived, int zombiesKilled,
@@ -112,7 +112,8 @@ public class Game extends JFrame implements Runnable {
 			if (PERF_LOG && now - perfStart >= 5_000_000_000L) {
 				double sec = (now - perfStart) / 1e9;
 				long f = gameScreen.getFrameCount();
-				System.out.printf("PVZ_PERF state=%s ups=%.1f fps=%.1f%n", states, perfUpdates / sec, (f - perfFrames) / sec);
+				System.out.printf("PVZ_PERF state=%s ups=%.1f fps=%.1f maxPaintMs=%d%n", states, perfUpdates / sec,
+						(f - perfFrames) / sec, gameScreen.takeMaxPaintMillis());
 				perfStart = now;
 				perfUpdates = 0;
 				perfFrames = f;

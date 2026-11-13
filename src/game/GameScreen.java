@@ -47,13 +47,23 @@ public class GameScreen extends JPanel {
 	// -Dpvz.fastRender=true: gambar tanpa interpolasi & mode kualitas (jauh lebih ringan untuk versi browser)
 	private static final boolean FAST_RENDER = Boolean.getBoolean("pvz.fastRender");
 	private volatile long frames = 0;
+	private volatile long maxPaintNanos = 0;
+	private volatile States lastPaintedState = null;
 
 	public long getFrameCount() {
 		return frames;
 	}
 
+	// Waktu menggambar terlama sejak terakhir dipanggil (untuk log kinerja)
+	public long takeMaxPaintMillis() {
+		long ms = maxPaintNanos / 1_000_000;
+		maxPaintNanos = 0;
+		return ms;
+	}
+
 	@Override
 	public void paintComponent(Graphics g) {
+		long t0 = System.nanoTime();
 		super.paintComponent(g);
 		frames++;
 		Graphics2D g2 = (Graphics2D) g;
@@ -67,7 +77,14 @@ public class GameScreen extends JPanel {
 		}
 		g2.scale(scale, scale);
 		g2.clipRect(0, 0, Board.WIDTH, Board.HEIGHT);
+		States state = game.getStates();
 		game.getCurrentScreen().render(g2);
+		long took = System.nanoTime() - t0;
+		maxPaintNanos = Math.max(maxPaintNanos, took);
+		if (Game.PERF_LOG && state != lastPaintedState) {
+			System.out.printf("PVZ_FIRSTPAINT state=%s ms=%d%n", state, took / 1_000_000);
+			lastPaintedState = state;
+		}
 	}
 
 }

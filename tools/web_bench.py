@@ -39,16 +39,42 @@ def shot(stage, path):
     return Image.open(path).convert("L")
 
 
-def click_latency(page, stage, pos, scale, tmp, timeout=20.0):
-    before = shot(stage, tmp)
-    stage.click(position={"x": pos[0] * scale, "y": pos[1] * scale})
-    t0 = time.time()
-    while time.time() - t0 < timeout:
-        now = shot(stage, tmp)
-        if ImageStat.Stat(ImageChops.difference(before, now)).mean[0] > 10:
-            return round((time.time() - t0) * 1000)
-        page.wait_for_timeout(50)
-    return None
+WATCH_JS = """
+(() => {
+  const c = document.querySelector('#display canvas');
+  const W = 66, H = 42, probe = document.createElement('canvas');
+  probe.width = W; probe.height = H;
+  const ctx = probe.getContext('2d', { willReadFrequently: true });
+  const sample = () => { ctx.drawImage(c, 0, 0, W, H); return ctx.getImageData(0, 0, W, H).data; };
+  const base = sample();
+  window.__lat = new Promise(resolve => {
+    let t0 = null;
+    window.__latStart = () => { t0 = performance.now(); };
+    const tick = () => {
+      if (t0 !== null) {
+        const d = sample();
+        let changed = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i] - base[i]) + Math.abs(d[i+1] - base[i+1]) + Math.abs(d[i+2] - base[i+2]) > 60) changed++;
+        }
+        if (changed >= 6) { resolve(Math.round(performance.now() - t0)); return; }
+        if (performance.now() - t0 > 20000) { resolve(null); return; }
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+})()
+"""
+
+
+def click_latency(page, stage, pos, scale, tmp=None, timeout=20.0):
+    """Jeda dari klik sampai canvas game berubah, diukur di dalam halaman tiap frame (bukan lewat screenshot)."""
+    page.evaluate(WATCH_JS)
+    box = stage.bounding_box()
+    page.evaluate("window.__latStart()")
+    page.mouse.click(box["x"] + pos[0] * scale, box["y"] + pos[1] * scale)
+    return page.evaluate("window.__lat")
 
 
 def run(browser, base, name, qs):
@@ -96,7 +122,9 @@ def run(browser, base, name, qs):
             res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
             res["fps_saat_main"] = round(sum(v[1] for v in vals) / len(vals), 1)
     res["preload"] = next((l for l in lines if l.startswith("PVZ_PRELOAD")), None)
-    res["log_perf"] = lines[-6:]
+    res["first_paint"] = [l for l in lines if l.startswith("PVZ_FIRSTPAINT")]
+    res["preload_progress"] = [l for l in lines if l.startswith("PVZ_PRELOAD")][-3:]
+    res["log_perf"] = [l for l in lines if l.startswith("PVZ_PERF")][-4:]
     ctx.close()
     return res
 
