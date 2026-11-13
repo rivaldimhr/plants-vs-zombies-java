@@ -103,4 +103,28 @@ class SaveDataTest {
         }
         assertEquals(PlantType.values().length, save.getUnlockedPlants().size());
     }
+
+    @Test
+    void scaleFromPropertyIsValidatedAndClamped() {
+        assertEquals(1.5, SaveData.parseScale("1.5", 1.0));
+        assertEquals(2.0, SaveData.parseScale(" 2 ", 1.0));
+        assertEquals(1.0, SaveData.parseScale(null, 1.0));
+        assertEquals(1.0, SaveData.parseScale("3.0", 1.0), "di luar 1x–2x diabaikan");
+        assertEquals(1.0, SaveData.parseScale("besar", 1.0), "bukan angka diabaikan");
+    }
+
+    @Test
+    void saveDirPropertyChangesSaveLocation() {
+        String old = System.getProperty("pvz.saveDir");
+        try {
+            System.setProperty("pvz.saveDir", dir.toString());
+            assertEquals(dir.resolve("save.properties"), SaveData.defaultFile());
+        } finally {
+            if (old == null) {
+                System.clearProperty("pvz.saveDir");
+            } else {
+                System.setProperty("pvz.saveDir", old);
+            }
+        }
+    }
 }

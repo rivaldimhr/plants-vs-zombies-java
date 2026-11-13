@@ -1,5 +1,9 @@
-# Setiap push / pull request: jalankan semua unit test dan buat JAR.
-# Setiap tag v* (misalnya v2.0.0): JAR otomatis dilampirkan ke GitHub Release.
+# Setiap push / pull request:
+#   1. unit test + JAR
+#   2. test end-to-end desktop: pemain otomatis (tools/demo/DemoPlayer) memainkan Level 1 di layar virtual
+#   3. test versi browser: game dimuat lewat CheerpJ di Chromium, menu tampil, klik START & Level 1 berfungsi
+# Push ke main: versi browser dipublikasikan ke branch gh-pages.
+# Setiap tag v* (misalnya v1.0.0): JAR otomatis dilampirkan ke GitHub Release.
 name: Build
 
 on:
@@ -25,13 +29,40 @@ jobs:
       - name: Unit test
         run: sh ./test.sh
 
-      - name: Build JAR
-        run: sh ./build-jar.sh
+      - name: Build JAR + versi browser
+        run: sh ./build-web.sh
+
+      - name: Test end-to-end desktop (pemain otomatis, 70 detik)
+        run: |
+          sudo apt-get install -y -qq xvfb >/dev/null
+          javac -encoding UTF-8 -cp dist/plants-vs-zombies.jar -d tools/demo/out tools/demo/DemoPlayer.java
+          xvfb-run -a -s "-screen 0 1280x800x24" java -cp dist/plants-vs-zombies.jar:tools/demo/out DemoPlayer 70 | tee e2e.log
+          grep DEMO_SUMMARY e2e.log
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test versi browser (CheerpJ + Chromium)
+        run: |
+          pip install -q playwright pillow
+          python -m playwright install --with-deps chromium >/dev/null
+          python tools/web_smoke.py dist/web dist/web/check
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: plants-vs-zombies-jar
-          path: dist/plants-vs-zombies.jar
+          name: plants-vs-zombies
+          path: |
+            dist/plants-vs-zombies.jar
+            dist/web/check
+
+      - name: Publikasikan versi browser ke gh-pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/web
+          force_orphan: true
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')

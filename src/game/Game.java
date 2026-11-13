@@ -51,6 +51,8 @@ public class Game extends JFrame implements Runnable {
 		setTitle("Plants vs Zombies (Java)");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setResizable(false);
+		// Versi browser (CheerpJ) menampilkan game tanpa bingkai jendela: -Dpvz.undecorated=true
+		setUndecorated(Boolean.getBoolean("pvz.undecorated"));
 		add(gameScreen);
 		gameScreen.setScale(saveData.getWindowScale());
 		pack();

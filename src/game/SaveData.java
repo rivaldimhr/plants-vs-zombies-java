@@ -31,14 +31,33 @@ public class SaveData {
         this.file = file;
     }
 
+    // Lokasi save bisa diganti lewat -Dpvz.saveDir=... (dipakai versi browser: folder /files/ CheerpJ yang tersimpan di browser)
     public static Path defaultFile() {
+        String dir = System.getProperty("pvz.saveDir");
+        if (dir != null && !dir.isBlank()) {
+            return Paths.get(dir, "save.properties");
+        }
         return Paths.get(System.getProperty("user.home"), ".pvz-java", "save.properties");
     }
 
     public static SaveData loadDefault() {
         SaveData data = new SaveData(defaultFile());
+        // Ukuran awal bisa diatur lewat -Dpvz.scale=1.5 (dipakai versi browser); save yang sudah ada tetap menang
+        data.windowScale = parseScale(System.getProperty("pvz.scale"), data.windowScale);
         data.load();
         return data;
+    }
+
+    static double parseScale(String value, double fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            double s = Double.parseDouble(value.trim());
+            return (s >= 1.0 && s <= 2.0) ? s : fallback;
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     public void load() {
