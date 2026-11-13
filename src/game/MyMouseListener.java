@@ -28,6 +28,7 @@ public class MyMouseListener implements MouseListener, MouseMotionListener {
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
+		game.noteInput();
 		game.getCurrentScreen().mouseMoved(gx(e), gy(e));
 	}
 
@@ -40,6 +41,7 @@ public class MyMouseListener implements MouseListener, MouseMotionListener {
 
 	@Override
 	public void mousePressed(MouseEvent e) {
+		game.noteInput();
 		// supaya keyboard tetap jalan setelah klik
 		e.getComponent().requestFocusInWindow();
 		if (e.getButton() == MouseEvent.BUTTON1) {

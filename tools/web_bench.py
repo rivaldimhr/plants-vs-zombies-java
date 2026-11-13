@@ -121,7 +121,7 @@ def run(browser, base, name, qs):
             res["ups_saat_main"] = round(sum(v[0] for v in vals) / len(vals), 1)
             res["fps_saat_main"] = round(sum(v[1] for v in vals) / len(vals), 1)
     res["first_paint"] = [l for l in lines if l.startswith("PVZ_FIRSTPAINT")]
-    res["warmup"] = [l for l in lines if l.startswith("PVZ_WARMUP")]
+    res["warmup"] = [l for l in lines if l.startswith("PVZ_WARMUP")][:12]
     res["log_perf"] = [l for l in lines if l.startswith("PVZ_PERF")][-4:]
     ctx.close()
     return res

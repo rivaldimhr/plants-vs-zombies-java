@@ -49,6 +49,7 @@ jobs:
           python -m playwright install --with-deps chromium >/dev/null
           python tools/web_smoke.py dist/web dist/web/check
       - name: Ukur kinerja versi browser (informasi, tidak menggagalkan build)
+        if: always()
         continue-on-error: true
         run: python tools/web_bench.py dist/web dist/web/check/bench.json
 

@@ -136,36 +136,59 @@ public class Game extends JFrame implements Runnable {
 	 * aman tanpa sinkronisasi, dan berhenti sementara selama permainan berlangsung agar tidak tersendat.
 	 * Matikan dengan -Dpvz.warmup=false.
 	 */
+	private volatile long lastInputNanos = 0;
+
+	// Dipanggil MyMouseListener; pemanasan menunggu bila pemain sedang aktif
+	void noteInput() {
+		lastInputNanos = System.nanoTime();
+	}
+
 	private void scheduleWarmUp() {
 		if (!Boolean.parseBoolean(System.getProperty("pvz.warmup", "true"))) {
 			return;
 		}
+		java.util.Deque<String> names = new java.util.ArrayDeque<>();
 		java.util.Deque<Runnable> steps = new java.util.ArrayDeque<>();
+		names.add("render LEVEL_SELECT");
 		steps.add(() -> renderOffscreen(screens.get(States.LEVEL_SELECT)));
+		names.add("render INVENTORY");
 		steps.add(() -> renderOffscreen(screens.get(States.INVENTORY)));
 		for (String path : Assets.preloadList()) {
+			names.add(path);
 			steps.add(() -> Assets.get(path));
 		}
 		int total = steps.size();
 		long start = System.nanoTime();
-		javax.swing.Timer timer = new javax.swing.Timer(40, null);
+		javax.swing.Timer timer = new javax.swing.Timer(50, null);
+		timer.setRepeats(false);
 		timer.addActionListener(e -> {
-			if (states == States.GAME_LEVEL) {
-				return; // jangan ganggu permainan
+			boolean busy = states == States.GAME_LEVEL || System.nanoTime() - lastInputNanos < 700_000_000L;
+			if (busy) {
+				timer.setInitialDelay(500); // pemain sedang aktif / bermain: coba lagi nanti
+				timer.restart();
+				return;
 			}
 			Runnable step = steps.poll();
+			String name = names.poll();
 			if (step == null) {
-				timer.stop();
 				if (PERF_LOG) {
 					System.out.printf("PVZ_WARMUP %d langkah selesai dalam %d ms%n", total, (System.nanoTime() - start) / 1_000_000);
 				}
 				return;
 			}
+			long t0 = System.nanoTime();
 			try {
 				step.run();
 			} catch (RuntimeException ex) {
 				System.err.println("Pemanasan dilewati: " + ex);
 			}
+			long ms = (System.nanoTime() - t0) / 1_000_000;
+			if (PERF_LOG && ms >= 150) {
+				System.out.printf("PVZ_WARMUP_STEP %s %d ms%n", name, ms);
+			}
+			// beri EDT waktu luang sebanding dengan lamanya langkah tadi (input & gambar tetap lancar)
+			timer.setInitialDelay((int) Math.max(30, Math.min(1000, ms)));
+			timer.restart();
 		});
 		timer.setInitialDelay(1500); // biarkan menu tampil dulu
 		timer.start();
