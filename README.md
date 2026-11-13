@@ -6,6 +6,13 @@ Game tower defense bergaya *Plants vs Zombies*, dibuat dengan Java Swing murni (
 
 Pilih 6 tanaman, tanam di halaman (darat dan kolam), kumpulkan sun, dan tahan gelombang zombie. Jika zombie masuk ke rumah, pemain kalah. Pemain menang jika semua wave berhasil dikalahkan.
 
+**▶ Main langsung di browser:** https://rivaldimhr.github.io/pvz/
+Tidak perlu memasang Java. File JAR yang sama dijalankan oleh [CheerpJ](https://cheerpj.com/); butuh laptop/PC dengan mouse.
+
+![Gameplay: memilih tanaman, mengumpulkan sun, menanam, dan memenangkan Level 1](docs/gameplay.gif)
+
+*Rekaman di atas dimainkan oleh pemain otomatis ([`tools/demo/DemoPlayer.java`](tools/demo/DemoPlayer.java)) lewat klik mouse sungguhan, dipercepat 3×.*
+
 | | |
 | --- | --- |
 | ![Gameplay](docs/screenshots/gameplay.png) | ![Cherry Bomb](docs/screenshots/cherry-bomb.png) |
@@ -29,6 +36,8 @@ git clone https://github.com/rivaldimhr/plants-vs-zombies-java.git
 cd plants-vs-zombies-java
 ./run.sh
 ```
+
+**Main di browser tanpa instalasi:** buka https://rivaldimhr.github.io/pvz/
 
 **Menjalankan unit test**
 ```sh
@@ -69,7 +78,28 @@ Detail lengkap (perintah manual, IDE, troubleshooting) ada di bagian [Cara Menja
 
 ## Cara Menjalankan
 
-### Cara termudah: JAR siap main
+### Paling mudah: main di browser
+
+Buka **https://rivaldimhr.github.io/pvz/**, klik *Mulai main*. Pemuatan pertama sekitar 10–60 detik, tergantung koneksi.
+
+Cara kerjanya:
+- Halaman [`web/index.html`](web/index.html) memuat CheerpJ 5 (JVM dalam WebAssembly) dari CDN-nya.
+- Lalu menjalankan `plants-vs-zombies.jar` dengan Java 17, tanpa satu baris kode pun ditulis ulang.
+- Versi browser hanya memberi tiga *system property*:
+  - `pvz.scale=1.5` (ukuran awal 1,5×);
+  - `pvz.undecorated=true` (tanpa bingkai jendela);
+  - `pvz.saveDir=/files/pvz` (progres disimpan di penyimpanan browser).
+
+Mencoba versi browser di komputer sendiri:
+
+```sh
+./build-web.sh                      # hasil: dist/web/
+python3 tools/serve.py dist/web 8000  # buka http://localhost:8000/
+```
+
+`tools/serve.py` dipakai karena CheerpJ butuh server yang mendukung HTTP Range; `python -m http.server` bawaan tidak mendukungnya.
+
+### JAR siap main
 
 Download `plants-vs-zombies.jar` dari halaman [Releases](https://github.com/rivaldimhr/plants-vs-zombies-java/releases), lalu:
 
@@ -255,13 +285,15 @@ src/
     projectile/   Bullet, PeaBullet, SlowBullet, PuffBullet
     effect/       Effect, SpriteEffect, DeathEffect, ParticleEffect, ExplosionEffect,
                   FireRowEffect, FumeEffect, ArmorDropEffect
-test/                       116 unit test JUnit 5
+test/                       119 unit test JUnit 5
+web/                        halaman pemutar versi browser (CheerpJ)
 image/                      aset gambar asli
 image/sprites, cards, ui    aset turunan (dibuat tools/build_assets.py)
 sound/                      efek suara & musik (dibuat tools/generate_sounds.py)
-tools/                      script pembuat aset (Python)
+tools/                      script pembuat aset (Python), server lokal & test browser
+tools/demo/DemoPlayer.java  pemain otomatis (test end-to-end & rekaman GIF)
 lib/                        JUnit
-.github/workflows/          CI: test + build JAR + release otomatis
+.github/workflows/          CI: unit test, test end-to-end desktop & browser, publikasi, release
 ```
 
 ### Membuat ulang aset
@@ -272,6 +304,26 @@ Butuh Python dengan Pillow dan numpy (`pip install pillow numpy`).
 python tools/build_assets.py     # sprite sheet, kartu, gambar tanaman baru
 python tools/generate_sounds.py  # efek suara & musik
 ```
+
+## Pengujian
+
+Setiap push menjalankan tiga lapis pengujian di GitHub Actions ([`build.yml`](.github/workflows/build.yml)):
+
+| Lapis | Apa yang diuji | Cara |
+|---|---|---|
+| **Unit test** | 119 test JUnit 5: aturan tanam, wave, cooldown deck, armor, save data, nama file sprite, dll. | `./test.sh` |
+| **End-to-end desktop** | Game sungguhan dimainkan lewat klik mouse (`java.awt.Robot`) di layar virtual: Start → Level 1 → pilih 6 tanaman → kumpulkan sun → tanam → kalahkan zombie. Gagal jika ada exception, sun tidak bisa diambil, atau tidak ada zombie yang kalah. | `xvfb-run java -cp dist/plants-vs-zombies.jar:tools/demo/out DemoPlayer 70` |
+| **Browser** | Versi web dimuat lewat CheerpJ di Chromium dari sub-folder `/pvz/`. Menu harus tampil, klik START harus ke layar pilih level, dan klik Level 1 harus ke inventory, tanpa error JavaScript. | `python tools/web_smoke.py dist/web dist/web/check` |
+
+Contoh ringkasan dari pemain otomatis (CI):
+
+```
+DEMO_SUMMARY {"reachedGame": true, "sunsClicked": 78, "planted": 15, "zombiesKilled": 9, "uncaughtExceptions": 0}
+```
+
+Dua masalah sudah ditemukan lewat pengujian ini sebelum versi browser dirilis:
+- Server lokal yang tidak mendukung *Range request* membuat CheerpJ gagal memuat JAR.
+- Layar muat tetap menutupi game karena CSS mengalahkan atribut `hidden`, sehingga klik tidak sampai ke game.
 
 ## Konsep OOP & Design Pattern
 
@@ -303,4 +355,4 @@ Project ini berawal dari Tugas Besar kelompok mata kuliah Pemrograman Berorienta
 
 ## Lisensi
 
-Kode sumber memakai lisensi [MIT](LICENSE). Aset gambar *Plants vs Zombies* adalah milik PopCap Games / Electronic Arts dan dipakai untuk keperluan belajar non-komersial; aset tersebut tidak termasuk dalam lisensi. Gambar tanaman baru, efek suara, dan musik dibuat sendiri oleh script di `tools/`.
+Kode sumber memakai lisensi [MIT](LICENSE). Versi browser memakai [CheerpJ](https://cheerpj.com/) dengan lisensi Community (gratis untuk proyek pribadi non-komersial, dimuat dari CDN CheerpJ, dengan kredit "Built with CheerpJ"). Aset gambar *Plants vs Zombies* adalah milik PopCap Games / Electronic Arts dan dipakai untuk keperluan belajar non-komersial; aset tersebut tidak termasuk dalam lisensi. Gambar tanaman baru, efek suara, dan musik dibuat sendiri oleh script di `tools/`.
