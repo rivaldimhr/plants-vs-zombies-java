@@ -48,6 +48,15 @@ jobs:
           python -m playwright install --with-deps chromium >/dev/null
           python tools/web_smoke.py dist/web dist/web/check
 
+      - name: Simpan hasil cek browser ke branch ci-check
+        if: always() && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/web/check
+          publish_branch: ci-check
+          force_orphan: true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

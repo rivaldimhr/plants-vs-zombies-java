@@ -72,8 +72,14 @@ def main(site, out):
         if ok:
             report["seconds_to_ready"] = round(time.time() - t0, 1)
             report["checks"]["game_loaded"] = True
-            page.wait_for_timeout(4000)
             stage = page.locator("#stage")
+            for i in range(4):
+                page.wait_for_timeout(2000)
+                stage.screenshot(path=str(out / f"setelah-siap-{(i + 1) * 2}s.png"))
+            report["canvases"] = page.evaluate(
+                "[...document.querySelectorAll('#display canvas')].map(c => { const r = c.getBoundingClientRect(); "
+                "const s = document.getElementById('stage').getBoundingClientRect(); "
+                "return {x: r.x - s.x, y: r.y - s.y, w: r.width, h: r.height, cw: c.width, ch: c.height}; })")
             stage.screenshot(path=str(out / "menu.png"))
             page.screenshot(path=str(out / "halaman.png"))
             report["checks"]["menu_not_blank"] = brightness(out / "menu.png") > 25
