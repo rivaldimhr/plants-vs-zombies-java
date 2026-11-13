@@ -132,7 +132,7 @@ public class Game extends JFrame implements Runnable {
 
 	/**
 	 * Pemanasan: selagi pemain di menu, gambar layar pilih level & inventory sekali di belakang layar (menyiapkan
-	 * font dan gambar berskala), lalu decode semua gambar satu per satu. Berjalan di EDT lewat Swing Timer, jadi
+	 * font, gambar, dan gambar berskala yang dipakai layar itu). Berjalan di EDT lewat Swing Timer, jadi
 	 * aman tanpa sinkronisasi, dan berhenti sementara selama permainan berlangsung agar tidak tersendat.
 	 * Matikan dengan -Dpvz.warmup=false.
 	 */
@@ -153,9 +153,13 @@ public class Game extends JFrame implements Runnable {
 		steps.add(() -> renderOffscreen(screens.get(States.LEVEL_SELECT)));
 		names.add("render INVENTORY");
 		steps.add(() -> renderOffscreen(screens.get(States.INVENTORY)));
-		for (String path : Assets.preloadList()) {
-			names.add(path);
-			steps.add(() -> Assets.get(path));
+		// Catatan: decode gambar satu per satu lewat Timer ini (Assets.preloadList) membuat versi browser (CheerpJ)
+		// berhenti menggambar, jadi dinonaktifkan; menggambar layar di atas sudah ikut memuat gambar yang dipakai layar itu.
+		if (Boolean.getBoolean("pvz.warmupImages")) {
+			for (String path : Assets.preloadList()) {
+				names.add(path);
+				steps.add(() -> Assets.get(path));
+			}
 		}
 		int total = steps.size();
 		long start = System.nanoTime();
