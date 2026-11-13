@@ -10,6 +10,7 @@
   --green:#2E4A33; --green-2:#24392a; --mustard:#F5B40A; --cream:#f6f1e3; --ink:#1d241f; --mute:#5b6b5f;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--green);font-weight:600}
 :focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
@@ -124,13 +125,36 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
     text.innerHTML = msg + ' Unduh <a href="plants-vs-zombies.jar" download style="color:#F5B40A">file JAR</a> dan jalankan dengan Java 17+ sebagai gantinya.';
   }
 
-  // Sembunyikan layar muat begitu jendela game muncul (CheerpJ menggambar jendela sebagai canvas)
-  new MutationObserver((_, obs) => {
-    if (display.querySelector("canvas")) {
-      setTimeout(() => { overlay.hidden = true; window.__pvzReady = true; }, 600);
-      obs.disconnect();
+  // Sembunyikan layar muat begitu jendela game benar-benar tergambar.
+  // CheerpJ membuat canvas lebih dulu (masih hitam), jadi tunggu sampai isinya tidak lagi gelap.
+  const probe = document.createElement("canvas");
+  probe.width = probe.height = 16;
+  const pctx = probe.getContext("2d", { willReadFrequently: true });
+  function gameDrawn() {
+    const c = display.querySelector("canvas");
+    if (!c || !c.width) return false;
+    try {
+      pctx.clearRect(0, 0, 16, 16);
+      pctx.drawImage(c, 0, 0, 16, 16);
+      const d = pctx.getImageData(0, 0, 16, 16).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+      return sum / (d.length / 4 * 3) > 20;
+    } catch (e) {
+      return !display.querySelector(".cheerpjLoading");
     }
-  }).observe(display, { childList: true, subtree: true });
+  }
+  let waited = 0;
+  function waitForGame() {
+    if (gameDrawn()) {
+      overlay.hidden = true;
+      window.__pvzReady = true;
+      return;
+    }
+    waited += 400;
+    if (waited === 90000) text.textContent = "Masih memuat… koneksi tampaknya lambat. Halaman ini akan terus mencoba.";
+    setTimeout(waitForGame, 400);
+  }
 
   async function start() {
     startBtn.hidden = true;
@@ -148,6 +172,7 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
       });
       cheerpjCreateDisplay(-1, -1, display);
       title.textContent = "Memuat game…";
+      waitForGame();
       const code = await cheerpjRunJar(jar);
       overlay.hidden = false;
       overlay.classList.add("error");
