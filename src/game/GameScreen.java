@@ -44,12 +44,27 @@ public class GameScreen extends JPanel {
 		requestFocusInWindow();
 	}
 
+	// -Dpvz.fastRender=true: gambar tanpa interpolasi & mode kualitas (jauh lebih ringan untuk versi browser)
+	private static final boolean FAST_RENDER = Boolean.getBoolean("pvz.fastRender");
+	private volatile long frames = 0;
+
+	public long getFrameCount() {
+		return frames;
+	}
+
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		frames++;
 		Graphics2D g2 = (Graphics2D) g;
-		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		if (FAST_RENDER) {
+			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+		} else {
+			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		}
 		g2.scale(scale, scale);
 		g2.clipRect(0, 0, Board.WIDTH, Board.HEIGHT);
 		game.getCurrentScreen().render(g2);

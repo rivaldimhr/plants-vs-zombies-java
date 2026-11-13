@@ -166,10 +166,16 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
       return;
     }
     try {
-      await cheerpjInit({
-        version: 17,
-        javaProperties: ["pvz.scale=1.5", "pvz.undecorated=true", "pvz.saveDir=/files/pvz"]
-      });
+      // Pengaturan kinerja; bisa diubah lewat URL untuk pengukuran, mis. ?fps=60&fast=0&scale=1
+      const q = new URLSearchParams(location.search);
+      const props = [
+        "pvz.undecorated=true", "pvz.saveDir=/files/pvz",
+        "pvz.scale=" + (q.get("scale") || "1.5"),
+        "pvz.fps=" + (q.get("fps") || "120"),
+        "pvz.fastRender=" + (q.get("fast") === "1"),
+        "pvz.perfLog=" + q.has("perf")
+      ];
+      await cheerpjInit({ version: 17, javaProperties: props });
       cheerpjCreateDisplay(-1, -1, display);
       title.textContent = "Memuat game…";
       waitForGame();

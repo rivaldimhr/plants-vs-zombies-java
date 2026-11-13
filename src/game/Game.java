@@ -13,7 +13,10 @@ public class Game extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 
 	public static final int UPS = 60; // update (tick) per detik
-	private static final double FPS_SET = 120.0;
+	// Frame per detik; bisa diturunkan lewat -Dpvz.fps=30 (versi browser) supaya CPU tidak habis untuk menggambar
+	private static final double FPS_SET = Math.max(10, Math.min(240, Integer.getInteger("pvz.fps", 120)));
+	// -Dpvz.perfLog=true: cetak update & frame per detik tiap 5 detik (untuk mengukur kinerja)
+	private static final boolean PERF_LOG = Boolean.getBoolean("pvz.perfLog");
 
 	// Hasil permainan terakhir, ditampilkan di layar Win / Game Over
 	public record GameResult(Level level, boolean won, int wavesSurvived, int zombiesKilled,
@@ -82,6 +85,7 @@ public class Game extends JFrame implements Runnable {
 
 		long lastFrame = System.nanoTime();
 		long lastUpdate = System.nanoTime();
+		long perfStart = lastFrame, perfUpdates = 0, perfFrames = gameScreen.getFrameCount();
 
 		while (true) {
 			long now = System.nanoTime();
@@ -95,6 +99,7 @@ public class Game extends JFrame implements Runnable {
 			// Update
 			if (now - lastUpdate >= timePerUpdate) {
 				getCurrentScreen().update();
+				perfUpdates++;
 				// ditambah interval (bukan = now) supaya keterlambatan tidak menumpuk
 				lastUpdate += timePerUpdate;
 				// kalau tertinggal jauh (misalnya laptop sleep), jangan kejar-kejaran
@@ -103,9 +108,20 @@ public class Game extends JFrame implements Runnable {
 				}
 			}
 
-			// Istirahat sebentar supaya CPU tidak 100%
+			if (PERF_LOG && now - perfStart >= 5_000_000_000L) {
+				double sec = (now - perfStart) / 1e9;
+				long f = gameScreen.getFrameCount();
+				System.out.printf("PVZ_PERF state=%s ups=%.1f fps=%.1f%n", states, perfUpdates / sec, (f - perfFrames) / sec);
+				perfStart = now;
+				perfUpdates = 0;
+				perfFrames = f;
+			}
+
+			// Tidur sampai jadwal update/render berikutnya (minimal 1 ms), bukan berputar terus
+			long next = Math.min(lastFrame + (long) timePerFrame, lastUpdate + (long) timePerUpdate);
+			long sleepMs = Math.max(1, (next - System.nanoTime()) / 1_000_000);
 			try {
-				Thread.sleep(1);
+				Thread.sleep(sleepMs);
 			} catch (InterruptedException e) {
 				return;
 			}
