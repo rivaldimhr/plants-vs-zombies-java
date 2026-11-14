@@ -1,0 +1,27 @@
+{
+  "url_path": "/pvz/",
+  "checks": {
+    "game_loaded": true,
+    "menu_not_blank": true,
+    "start_changes_screen": true,
+    "level_click_changes_screen": true,
+    "no_page_errors": true
+  },
+  "page_errors": [],
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (File not found)"
+  ],
+  "seconds_to_ready": 6.2,
+  "canvases": [
+    {
+      "x": 0,
+      "y": 0,
+      "w": 990,
+      "h": 630,
+      "cw": 990,
+      "ch": 630
+    }
+  ],
+  "runtime_resources": 19,
+  "passed": true
+}
