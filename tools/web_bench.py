@@ -25,7 +25,7 @@ from serve import make_server  # noqa: E402
 CONFIGS = {
     "lama: 120 fps, kualitas tinggi, tanpa pemanasan": "fps=120&fast=0&scale=1.5&warmup=0",
     "60 fps, render cepat, tanpa pemanasan": "fps=60&fast=1&scale=1.5&warmup=0",
-    "60 fps, render cepat, pemanasan": "fps=60&fast=1&scale=1.5",
+    "bawaan sekarang: 60 fps, render cepat, pemanasan": "scale=1.5",
 }
 MENU_START, LEVEL_1, PLAY = (328, 322), (123, 120), (607, 22)
 CARD_SUNFLOWER = (81, 35)    # slot deck pertama (Sunflower, 50 sun: bisa dipilih di awal)

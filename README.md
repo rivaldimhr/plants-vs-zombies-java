@@ -80,13 +80,13 @@ Detail lengkap (perintah manual, IDE, troubleshooting) ada di bagian [Cara Menja
 
 ### Paling mudah: main di browser
 
-Buka **https://rivaldimhr.github.io/pvz/**, klik *Mulai main*. Pemuatan pertama sekitar 10–60 detik, tergantung koneksi.
+Buka **https://rivaldimhr.github.io/pvz/**. Di laptop/PC game langsung mulai dimuat; pemuatan pertama biasanya 10–40 detik tergantung koneksi, kunjungan berikutnya lebih cepat.
 
 Cara kerjanya:
 - Halaman [`web/index.html`](web/index.html) memuat CheerpJ 5 (JVM dalam WebAssembly) dari CDN-nya.
 - Lalu menjalankan `plants-vs-zombies.jar` dengan Java 17, tanpa satu baris kode pun ditulis ulang.
-- Versi browser hanya memberi tiga *system property*:
-  - `pvz.scale=1.5` (ukuran awal 1,5×);
+- Versi browser hanya memberi beberapa *system property*:
+  - `pvz.scale=1.5` (ukuran awal 1,5×), `pvz.fps=60` dan `pvz.fastRender=true` (lihat *Kinerja di browser*);
   - `pvz.undecorated=true` (tanpa bingkai jendela);
   - `pvz.saveDir=/files/pvz` (progres disimpan di penyimpanan browser).
 
@@ -98,6 +98,24 @@ python3 tools/serve.py dist/web 8000  # buka http://localhost:8000/
 ```
 
 `tools/serve.py` dipakai karena CheerpJ butuh server yang mendukung HTTP Range; `python -m http.server` bawaan tidak mendukungnya.
+
+#### Kinerja di browser
+
+Versi pertama terasa berat di browser. Hasil pengukuran otomatis di Chromium ([`tools/web_bench.py`](tools/web_bench.py)), jalan di setiap push:
+
+| | Pengaturan desktop | Pengaturan browser sekarang |
+|---|---|---|
+| Kecepatan game saat bermain | 25 dari 60 update/detik (game berjalan ~40% kecepatan) | **60/60** |
+| Frame per detik | ~19 | **~55** |
+| Klik START → layar pilih level | ~840 ms | **~130 ms** |
+| Klik Level 1 → inventory | ~600 ms | **~110 ms** |
+
+Yang diubah khusus untuk versi browser:
+- **Render cepat** (`pvz.fastRender`): tanpa interpolasi bilinear dan mode kualitas. Inilah yang mengembalikan kecepatan penuh.
+- **60 FPS** (`pvz.fps`), bukan 120.
+- **Pemanasan:** selagi pemain di menu, layar pilih level dan inventory digambar sekali di belakang layar, sehingga font dan gambarnya sudah siap saat diklik.
+
+Versi desktop tetap memakai pengaturan kualitas tinggi.
 
 ### JAR siap main
 

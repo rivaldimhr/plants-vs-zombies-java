@@ -74,7 +74,7 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
     <div id="display" aria-label="Layar game"></div>
     <div id="overlay" role="status" aria-live="polite">
       <h2 id="ov-title">Game Java asli, berjalan di browser</h2>
-      <p id="ov-text">Kode Java Swing yang sama dengan versi desktop, dijalankan oleh mesin Java di dalam browser. Pemuatan pertama sekitar 20–60 detik; berikutnya lebih cepat.</p>
+      <p id="ov-text">Kode Java Swing yang sama dengan versi desktop, dijalankan oleh mesin Java di dalam browser. Pemuatan pertama biasanya 10–40 detik, tergantung koneksi; berikutnya lebih cepat.</p>
       <button class="btn btn-mustard play" id="start">Mulai main</button>
       <div class="bar" id="bar" hidden><span></span></div>
     </div>
@@ -162,7 +162,7 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
     startBtn.hidden = true;
     bar.hidden = false;
     title.textContent = "Memuat mesin Java…";
-    text.textContent = "Pertama kali butuh sekitar 20–60 detik, tergantung koneksi. Jangan tutup halaman ini.";
+    text.textContent = "Pertama kali biasanya 10–40 detik, tergantung koneksi. Kunjungan berikutnya lebih cepat karena tersimpan di browser.";
     if (typeof cheerpjInit !== "function") {
       fail("Mesin Java (CheerpJ) gagal diunduh, mungkin diblokir jaringan.");
       return;
@@ -173,8 +173,9 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
       const props = [
         "pvz.undecorated=true", "pvz.saveDir=/files/pvz",
         "pvz.scale=" + (q.get("scale") || "1.5"),
-        "pvz.fps=" + (q.get("fps") || "120"),
-        "pvz.fastRender=" + (q.get("fast") === "1"),
+        // Bawaan hasil pengukuran (tools/web_bench.py): 60 fps + render cepat membuat game berjalan penuh 60 update/detik
+        "pvz.fps=" + (q.get("fps") || "60"),
+        "pvz.fastRender=" + (q.get("fast") !== "0"),
         "pvz.perfLog=" + q.has("perf"),
         "pvz.warmup=" + (q.get("warmup") !== "0")
       ];
@@ -194,8 +195,10 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
   }
 
   startBtn.addEventListener("click", start);
-  // ?autoplay=1 langsung memuat (dipakai test otomatis)
-  if (new URLSearchParams(location.search).has("autoplay")) start();
+  // Di layar lebar (laptop/PC) langsung mulai memuat supaya pemain tidak menunggu dua kali.
+  // Di ponsel tunggu tombol ditekan (game butuh mouse). ?autoplay=1 selalu langsung memuat (test otomatis).
+  const params = new URLSearchParams(location.search);
+  if (params.has("autoplay") || (window.matchMedia("(min-width: 900px) and (pointer: fine)").matches && !params.has("manual"))) start();
 })();
 </script>
 </body>
