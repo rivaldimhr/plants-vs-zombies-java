@@ -33,6 +33,7 @@ main{padding:24px 0 48px}
 #overlay p{margin:0;max-width:52ch;color:#c6d3c9}
 .bar{width:min(360px,80%);height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
 .bar span{display:block;height:100%;width:30%;background:var(--mustard);border-radius:4px;animation:slide 1.4s ease-in-out infinite}
+.bar.determinate span{animation:none;transform:none;transition:width .2s}
 @keyframes slide{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
 #overlay.error .bar{display:none}
 #overlay .play{font-size:18px;padding:12px 26px}
@@ -118,7 +119,18 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
   const display = document.getElementById("display");
   // CheerpJ: /app/ = akar server web. Halaman ini bisa diletakkan di sub-folder mana pun.
   const dir = location.pathname.replace(/[^/]*$/, "");
-  const jar = "/app" + dir + "plants-vs-zombies.jar";
+  const q = new URLSearchParams(location.search);
+  // ?jar=nama.jar hanya untuk pengukuran (membandingkan JAR)
+  const jar = "/app" + dir + (/^[\w.-]+\.jar$/.test(q.get("jar") || "") ? q.get("jar") : "plants-vs-zombies.jar");
+
+  // Daftar file runtime CheerpJ yang dipakai game (dikumpulkan otomatis di CI lewat cjGetRuntimeResources()).
+  // Dengan daftar ini CheerpJ mengunduh semuanya sekaligus di awal, bukan satu per satu saat dibutuhkan.
+  const resourcesReady = q.has("nopreload") ? Promise.resolve(null)
+    : fetch("cj-resources.json").then(r => (r.ok ? r.json() : null)).catch(() => null);
+  window.__pvzCollectResources = () => {
+    const r = cjGetRuntimeResources();
+    return typeof r === "string" ? r : JSON.stringify(r);
+  };
 
   function fail(msg) {
     overlay.classList.add("error");
@@ -169,7 +181,6 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
     }
     try {
       // Pengaturan kinerja; bisa diubah lewat URL untuk pengukuran, mis. ?fps=60&fast=0&scale=1
-      const q = new URLSearchParams(location.search);
       const props = [
         "pvz.undecorated=true", "pvz.saveDir=/files/pvz",
         "pvz.scale=" + (q.get("scale") || "1.5"),
@@ -179,7 +190,19 @@ footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
         "pvz.perfLog=" + q.has("perf"),
         "pvz.warmup=" + (q.get("warmup") !== "0")
       ];
-      await cheerpjInit({ version: 17, javaProperties: props });
+      const preload = await resourcesReady;
+      const opts = { version: 17, javaProperties: props };
+      if (preload) {
+        opts.preloadResources = preload;
+        const span = bar.querySelector("span");
+        opts.preloadProgress = (loaded, total) => {
+          if (!total) return;
+          bar.classList.add("determinate");
+          span.style.width = Math.round(loaded / total * 100) + "%";
+          title.textContent = "Memuat mesin Java… " + Math.round(loaded / total * 100) + "%";
+        };
+      }
+      await cheerpjInit(opts);
       cheerpjCreateDisplay(-1, -1, display);
       title.textContent = "Memuat game…";
       waitForGame();

@@ -93,6 +93,18 @@ def main(site, out):
             page.wait_for_timeout(2500)
             stage.screenshot(path=str(out / "inventory.png"))
             report["checks"]["level_click_changes_screen"] = differ(out / "pilih-level.png", out / "inventory.png") > 10
+            # lanjut masuk permainan sebentar supaya kelas yang dipakai saat bermain ikut tercatat
+            for x, y in [(208, 185), (124, 185), (376, 185), (292, 185), (460, 185), (208, 265), (607, 22)]:
+                stage.click(position={"x": x * SCALE, "y": y * SCALE})
+                page.wait_for_timeout(300)
+            page.wait_for_timeout(8000)
+            try:
+                res = page.evaluate("window.__pvzCollectResources()")
+                parsed = json.loads(res)
+                (out / "cj-resources.json").write_text(json.dumps(parsed))
+                report["runtime_resources"] = len(parsed)
+            except Exception as e:  # tidak menggagalkan test; halaman tetap jalan tanpa daftar
+                report["runtime_resources_error"] = str(e)[:200]
         report["checks"]["no_page_errors"] = not report["page_errors"]
         b.close()
     srv.shutdown()

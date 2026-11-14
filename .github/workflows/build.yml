@@ -31,7 +31,9 @@ jobs:
         run: sh ./test.sh
 
       - name: Build JAR + versi browser
-        run: sh ./build-web.sh
+        run: |
+          pip3 install -q pillow
+          sh ./build-web.sh
 
       - name: Test end-to-end desktop (pemain otomatis, 70 detik)
         run: |
@@ -48,10 +50,20 @@ jobs:
           pip install -q playwright pillow
           python -m playwright install --with-deps chromium >/dev/null
           python tools/web_smoke.py dist/web dist/web/check
+      - name: Pasang daftar resource CheerpJ hasil test (preloadResources)
+        run: |
+          if [ -f dist/web/check/cj-resources.json ]; then cp dist/web/check/cj-resources.json dist/web/; fi
+          ls -la dist/web
+
       - name: Ukur kinerja versi browser (informasi, tidak menggagalkan build)
         if: always()
         continue-on-error: true
-        run: python tools/web_bench.py dist/web dist/web/check/bench.json
+        run: |
+          cp dist/plants-vs-zombies.jar /tmp/small.jar
+          NO_COMPRESS=1 sh ./build-jar.sh >/dev/null && cp dist/plants-vs-zombies.jar dist/web/plants-vs-zombies-full.jar
+          cp /tmp/small.jar dist/plants-vs-zombies.jar
+          python tools/web_bench.py dist/web dist/web/check/bench.json
+          rm -f dist/web/plants-vs-zombies-full.jar
 
       - name: Simpan hasil cek browser ke branch ci-check
         if: always() && github.ref == 'refs/heads/main'

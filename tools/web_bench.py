@@ -22,6 +22,13 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, str(Path(__file__).parent))
 from serve import make_server  # noqa: E402
 
+# Koneksi lambat (Chrome DevTools): 10 Mbps turun, 60 ms latensi
+SLOW = {"offline": False, "latency": 60, "downloadThroughput": 10_000_000 / 8, "uploadThroughput": 5_000_000 / 8}
+LOAD_CONFIGS = {
+    "muat awal 10 Mbps: JAR lama, tanpa preloadResources": "jar=plants-vs-zombies-full.jar&nopreload=1",
+    "muat awal 10 Mbps: JAR kecil, tanpa preloadResources": "nopreload=1",
+    "muat awal 10 Mbps: JAR kecil + preloadResources (sekarang)": "",
+}
 CONFIGS = {
     "lama: 120 fps, kualitas tinggi, tanpa pemanasan": "fps=120&fast=0&scale=1.5&warmup=0",
     "60 fps, render cepat, tanpa pemanasan": "fps=60&fast=1&scale=1.5&warmup=0",
@@ -127,6 +134,24 @@ def run(browser, base, name, qs):
     return res
 
 
+def load_time(browser, base, name, qs):
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900})
+    page = ctx.new_page()
+    cdp = ctx.new_cdp_session(page)
+    cdp.send("Network.enable")
+    cdp.send("Network.emulateNetworkConditions", SLOW)
+    t0 = time.time()
+    page.goto(f"{base}?autoplay=1&{qs}")
+    res = {"config": name}
+    try:
+        page.wait_for_function("window.__pvzReady === true", timeout=300_000)
+        res["detik_sampai_menu"] = round(time.time() - t0, 1)
+    except Exception:
+        res["error"] = "tidak termuat dalam 300 detik"
+    ctx.close()
+    return res
+
+
 def main(site, out):
     root = Path(tempfile.mkdtemp())
     shutil.copytree(site, root / "pvz", ignore=shutil.ignore_patterns("check"))
@@ -137,6 +162,10 @@ def main(site, out):
     results = []
     with sync_playwright() as p:
         b = p.chromium.launch()
+        for name, qs in LOAD_CONFIGS.items():
+            r = load_time(b, base, name, qs)
+            print(json.dumps(r, ensure_ascii=False))
+            results.append(r)
         for name, qs in CONFIGS.items():
             r = run(b, base, name, qs)
             print(json.dumps(r, ensure_ascii=False))
