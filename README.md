@@ -110,7 +110,19 @@ Versi pertama terasa berat di browser. Hasil pengukuran otomatis di Chromium ([`
 | Klik START → layar pilih level | ~840 ms | **~130 ms** |
 | Klik Level 1 → inventory | ~600 ms | **~110 ms** |
 
+Pemuatan pertama di koneksi 10 Mbps (diukur dengan pembatasan jaringan Chromium):
+
+| | Detik sampai menu tampil |
+|---|---|
+| JAR asli (12,6 MB), tanpa daftar preload | 20,1 |
+| JAR dikompres (7,4 MB), tanpa daftar preload | 20,0 |
+| **JAR dikompres + `preloadResources` (sekarang)** | **18,3** |
+
+Sebagian besar waktu itu adalah mengunduh runtime Java (CheerpJ). JAR yang lebih kecil hampir tidak memengaruhi waktu sampai menu, karena CheerpJ hanya mengambil bagian JAR yang dibutuhkan. JAR kecil lebih terasa saat mengunduh JAR untuk desktop. Kunjungan berikutnya jauh lebih cepat karena runtime tersimpan di browser.
+
 Yang diubah khusus untuk versi browser:
+- **Kompresi PNG di JAR** ([`tools/compress_images.py`](tools/compress_images.py)): gambar diubah ke palet 256 warna, hanya bila perbedaannya tidak terlihat (rata-rata selisih ≤ 3/255). JAR turun dari 12,6 MB ke 7,4 MB; file asli di repo tidak diubah.
+- **`preloadResources`**: daftar file runtime yang dipakai game dikumpulkan otomatis di CI (`cjGetRuntimeResources()`), lalu diunduh sekaligus di awal; loading bar menunjukkan persentase sungguhan.
 - **Render cepat** (`pvz.fastRender`): tanpa interpolasi bilinear dan mode kualitas. Inilah yang mengembalikan kecepatan penuh.
 - **60 FPS** (`pvz.fps`), bukan 120.
 - **Pemanasan:** selagi pemain di menu, layar pilih level dan inventory digambar sekali di belakang layar, sehingga font dan gambarnya sudah siap saat diklik.
