@@ -92,12 +92,14 @@ public class DemoPlayer {
     }
 
     private boolean play(int seconds) throws InterruptedException {
-        click(MENU_START, 1200);
-        click(LEVEL_1, 1200);
+        if (!clickUntil(MENU_START, States.LEVEL_SELECT) || !clickUntil(LEVEL_1, States.INVENTORY)) {
+            System.err.println("Gagal berpindah layar, state: " + game.getStates());
+            return false;
+        }
         for (Point pick : INVENTORY_PICKS) {
             click(pick, 350);
         }
-        click(PLAY, 600);
+        clickUntil(PLAY, States.GAME_LEVEL);
         if (game.getStates() != States.GAME_LEVEL) {
             System.err.println("Tidak masuk ke permainan, state: " + game.getStates());
             return false;
@@ -117,6 +119,21 @@ public class DemoPlayer {
             Thread.sleep(250);
         }
         return true;
+    }
+
+    // Klik lalu tunggu sampai layar berpindah; ulangi bila klik jatuh saat game sedang sibuk (mis. server CI lambat)
+    private boolean clickUntil(Point p, States expected) throws InterruptedException {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            click(p, 0);
+            for (int i = 0; i < 30 && game.getStates() != expected; i++) {
+                Thread.sleep(100);
+            }
+            if (game.getStates() == expected) {
+                Thread.sleep(500);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void collectSun(Board board) throws InterruptedException {

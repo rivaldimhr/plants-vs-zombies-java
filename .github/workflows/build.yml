@@ -39,6 +39,7 @@ jobs:
         run: |
           sudo apt-get install -y -qq xvfb >/dev/null
           javac -encoding UTF-8 -cp dist/plants-vs-zombies.jar -d tools/demo/out tools/demo/DemoPlayer.java
+          set -o pipefail
           xvfb-run -a -s "-screen 0 1280x800x24" java -cp dist/plants-vs-zombies.jar:tools/demo/out DemoPlayer 70 | tee e2e.log
           grep DEMO_SUMMARY e2e.log
 
@@ -59,9 +60,10 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          cp dist/plants-vs-zombies.jar /tmp/small.jar
-          NO_COMPRESS=1 sh ./build-jar.sh >/dev/null && cp dist/plants-vs-zombies.jar dist/web/plants-vs-zombies-full.jar
-          cp /tmp/small.jar dist/plants-vs-zombies.jar
+          # JAR tanpa kompresi untuk perbandingan; build-jar.sh menghapus dist/, jadi simpan dulu lalu kembalikan
+          rm -rf /tmp/dist-save && cp -r dist /tmp/dist-save
+          NO_COMPRESS=1 sh ./build-jar.sh >/dev/null && cp dist/plants-vs-zombies.jar /tmp/full.jar
+          rm -rf dist && cp -r /tmp/dist-save dist && cp /tmp/full.jar dist/web/plants-vs-zombies-full.jar
           python tools/web_bench.py dist/web dist/web/check/bench.json
           rm -f dist/web/plants-vs-zombies-full.jar
 
