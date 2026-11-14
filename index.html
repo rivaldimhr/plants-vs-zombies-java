@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plants vs Zombies (Java) — main di browser</title>
+<meta name="description" content="Game tower defense Java Swing yang berjalan langsung di browser lewat CheerpJ.">
+<style>
+:root{
+  --green:#2E4A33; --green-2:#24392a; --mustard:#F5B40A; --cream:#f6f1e3; --ink:#1d241f; --mute:#5b6b5f;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--green);font-weight:600}
+:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+header{background:var(--green);color:#fff}
+.wrap{max-width:1080px;margin:auto;padding:0 20px}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 0}
+.top h1{margin:0;font-size:22px;letter-spacing:.2px}
+.top .back{color:#dfe9e1;font-weight:500;text-decoration:none;font-size:14px}
+.top .back:hover{color:#fff;text-decoration:underline}
+.top .actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px;text-decoration:none;border:0;cursor:pointer}
+.btn-mustard{background:var(--mustard);color:var(--ink)}
+.btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+
+main{padding:24px 0 48px}
+.stage{position:relative;margin:0 auto;width:990px;max-width:100%;aspect-ratio:990/630;background:#0d1410;border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(29,36,31,.25)}
+#display{position:absolute;inset:0}
+#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;color:#e8efe9;padding:24px;background:radial-gradient(ellipse at center,#2E4A33 0%,#14201a 75%)}
+#overlay h2{margin:0;font-size:24px;color:#fff}
+#overlay p{margin:0;max-width:52ch;color:#c6d3c9}
+.bar{width:min(360px,80%);height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
+.bar span{display:block;height:100%;width:30%;background:var(--mustard);border-radius:4px;animation:slide 1.4s ease-in-out infinite}
+.bar.determinate span{animation:none;transform:none;transition:width .2s}
+@keyframes slide{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+#overlay.error .bar{display:none}
+#overlay .play{font-size:18px;padding:12px 26px}
+
+.below{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;margin-top:24px}
+.card{background:#fff;border:1px solid #e3dccb;border-radius:14px;padding:18px 20px}
+.card h3{margin:0 0 8px;font-size:16px}
+.card ul{margin:0;padding-left:20px}
+.card li{margin:4px 0}
+kbd{background:#f0ece0;border:1px solid #d8d0bb;border-bottom-width:2px;border-radius:5px;padding:0 6px;font-size:13px;font-family:inherit}
+.note{font-size:13px;color:var(--mute)}
+.mobile-note{display:none;background:#fff8e1;border:1px solid #f1d98a;border-radius:12px;padding:12px 16px;margin-bottom:16px}
+footer{border-top:1px solid #e3dccb;padding:18px 0;font-size:13px;color:var(--mute)}
+footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+
+@media (max-width:900px){
+  .below{grid-template-columns:1fr}
+  .mobile-note{display:block}
+}
+@media (prefers-reduced-motion:reduce){.bar span{animation:none;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <a class="back" href="../">← Portofolio</a>
+    <h1>Plants vs Zombies (Java)</h1>
+    <div class="actions">
+      <a class="btn btn-ghost" href="https://github.com/rivaldimhr/plants-vs-zombies-java">Kode</a>
+      <a class="btn btn-mustard" href="plants-vs-zombies.jar" download>Unduh JAR</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="mobile-note">Game ini dimainkan dengan mouse dan butuh layar lebar. Di ponsel, buka halaman ini dari laptop, atau lihat cuplikan gameplay di <a href="https://github.com/rivaldimhr/plants-vs-zombies-java">README</a>.</p>
+
+  <div class="stage" id="stage">
+    <div id="display" aria-label="Layar game"></div>
+    <div id="overlay" role="status" aria-live="polite">
+      <h2 id="ov-title">Game Java asli, berjalan di browser</h2>
+      <p id="ov-text">Kode Java Swing yang sama dengan versi desktop, dijalankan oleh mesin Java di dalam browser. Pemuatan pertama biasanya 10–40 detik, tergantung koneksi; berikutnya lebih cepat.</p>
+      <button class="btn btn-mustard play" id="start">Mulai main</button>
+      <div class="bar" id="bar" hidden><span></span></div>
+    </div>
+  </div>
+
+  <div class="below">
+    <div class="card">
+      <h3>Cara bermain</h3>
+      <ul>
+        <li>Klik <b>START</b>, pilih level, lalu pilih 6 tanaman untuk deck.</li>
+        <li>Klik kartu tanaman lalu klik petak halaman untuk menanam. Klik <b>sun</b> yang jatuh untuk mengumpulkannya.</li>
+        <li>Klik kanan untuk batal memilih. Keyboard: panah + <kbd>Enter</kbd> pilih petak, <kbd>1</kbd>–<kbd>6</kbd> tanam, <kbd>7</kbd> cabut, <kbd>P</kbd> / <kbd>Esc</kbd> jeda, <kbd>F</kbd> kecepatan 2×.</li>
+        <li>Progres level tersimpan di browser ini.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Tentang versi browser</h3>
+      <p class="note" style="margin-top:0">Ini file <code>.jar</code> yang sama dengan rilis desktop, dijalankan oleh <a href="https://cheerpj.com/">CheerpJ</a> (JVM dalam WebAssembly). Tidak ada kode yang ditulis ulang. Jika terasa patah-patah, unduh JAR dan jalankan dengan Java 17+.</p>
+      <p class="note" style="margin-bottom:0">Proyek belajar non-komersial. Aset gambar <i>Plants vs. Zombies</i> milik PopCap Games / Electronic Arts; kode berlisensi MIT, suara dan musik dibuat sendiri.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Dibuat oleh Rivaldi Mahari · Tugas Besar IF2212 OOP ITB, dikembangkan lanjut.</span>
+    <span>Built with <a href="https://cheerpj.com/">CheerpJ</a></span>
+  </div>
+</footer>
+
+<!-- CheerpJ menulis System.out ke elemen #console bila ada (disembunyikan; dibaca test kinerja) -->
+<pre id="console" hidden></pre>
+<script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
+<script>
+(function () {
+  const overlay = document.getElementById("overlay");
+  const title = document.getElementById("ov-title");
+  const text = document.getElementById("ov-text");
+  const startBtn = document.getElementById("start");
+  const bar = document.getElementById("bar");
+  const display = document.getElementById("display");
+  // CheerpJ: /app/ = akar server web. Halaman ini bisa diletakkan di sub-folder mana pun.
+  const dir = location.pathname.replace(/[^/]*$/, "");
+  const q = new URLSearchParams(location.search);
+  // ?jar=nama.jar hanya untuk pengukuran (membandingkan JAR)
+  const jar = "/app" + dir + (/^[\w.-]+\.jar$/.test(q.get("jar") || "") ? q.get("jar") : "plants-vs-zombies.jar");
+
+  // Daftar file runtime CheerpJ yang dipakai game (dikumpulkan otomatis di CI lewat cjGetRuntimeResources()).
+  // Dengan daftar ini CheerpJ mengunduh semuanya sekaligus di awal, bukan satu per satu saat dibutuhkan.
+  const resourcesReady = q.has("nopreload") ? Promise.resolve(null)
+    : fetch("cj-resources.json").then(r => (r.ok ? r.json() : null)).catch(() => null);
+  window.__pvzCollectResources = () => {
+    const r = cjGetRuntimeResources();
+    return typeof r === "string" ? r : JSON.stringify(r);
+  };
+
+  function fail(msg) {
+    overlay.classList.add("error");
+    overlay.hidden = false;
+    title.textContent = "Game tidak bisa dimuat di browser ini";
+    text.innerHTML = msg + ' Unduh <a href="plants-vs-zombies.jar" download style="color:#F5B40A">file JAR</a> dan jalankan dengan Java 17+ sebagai gantinya.';
+  }
+
+  // Sembunyikan layar muat begitu jendela game benar-benar tergambar.
+  // CheerpJ membuat canvas lebih dulu (masih hitam), jadi tunggu sampai isinya tidak lagi gelap.
+  const probe = document.createElement("canvas");
+  probe.width = probe.height = 16;
+  const pctx = probe.getContext("2d", { willReadFrequently: true });
+  function gameDrawn() {
+    const c = display.querySelector("canvas");
+    if (!c || !c.width) return false;
+    try {
+      pctx.clearRect(0, 0, 16, 16);
+      pctx.drawImage(c, 0, 0, 16, 16);
+      const d = pctx.getImageData(0, 0, 16, 16).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+      return sum / (d.length / 4 * 3) > 20;
+    } catch (e) {
+      return !display.querySelector(".cheerpjLoading");
+    }
+  }
+  let waited = 0;
+  function waitForGame() {
+    if (gameDrawn()) {
+      overlay.hidden = true;
+      window.__pvzReady = true;
+      return;
+    }
+    waited += 400;
+    if (waited === 90000) text.textContent = "Masih memuat… koneksi tampaknya lambat. Halaman ini akan terus mencoba.";
+    setTimeout(waitForGame, 400);
+  }
+
+  async function start() {
+    startBtn.hidden = true;
+    bar.hidden = false;
+    title.textContent = "Memuat mesin Java…";
+    text.textContent = "Pertama kali biasanya 10–40 detik, tergantung koneksi. Kunjungan berikutnya lebih cepat karena tersimpan di browser.";
+    if (typeof cheerpjInit !== "function") {
+      fail("Mesin Java (CheerpJ) gagal diunduh, mungkin diblokir jaringan.");
+      return;
+    }
+    try {
+      // Pengaturan kinerja; bisa diubah lewat URL untuk pengukuran, mis. ?fps=60&fast=0&scale=1
+      const props = [
+        "pvz.undecorated=true", "pvz.saveDir=/files/pvz",
+        "pvz.scale=" + (q.get("scale") || "1.5"),
+        // Bawaan hasil pengukuran (tools/web_bench.py): 60 fps + render cepat membuat game berjalan penuh 60 update/detik
+        "pvz.fps=" + (q.get("fps") || "60"),
+        "pvz.fastRender=" + (q.get("fast") !== "0"),
+        "pvz.perfLog=" + q.has("perf"),
+        "pvz.warmup=" + (q.get("warmup") !== "0")
+      ];
+      const preload = await resourcesReady;
+      const opts = { version: 17, javaProperties: props };
+      if (preload) {
+        opts.preloadResources = preload;
+        const span = bar.querySelector("span");
+        opts.preloadProgress = (loaded, total) => {
+          if (!total) return;
+          bar.classList.add("determinate");
+          span.style.width = Math.round(loaded / total * 100) + "%";
+          title.textContent = "Memuat mesin Java… " + Math.round(loaded / total * 100) + "%";
+        };
+      }
+      await cheerpjInit(opts);
+      cheerpjCreateDisplay(-1, -1, display);
+      title.textContent = "Memuat game…";
+      waitForGame();
+      const code = await cheerpjRunJar(jar);
+      overlay.hidden = false;
+      overlay.classList.add("error");
+      title.textContent = "Game ditutup";
+      text.textContent = "Muat ulang halaman untuk bermain lagi." + (code ? " (kode keluar " + code + ")" : "");
+    } catch (e) {
+      console.error(e);
+      fail("Terjadi kesalahan: " + (e && e.message ? e.message : e) + ".");
+    }
+  }
+
+  startBtn.addEventListener("click", start);
+  // Di layar lebar (laptop/PC) langsung mulai memuat supaya pemain tidak menunggu dua kali.
+  // Di ponsel tunggu tombol ditekan (game butuh mouse). ?autoplay=1 selalu langsung memuat (test otomatis).
+  const params = new URLSearchParams(location.search);
+  if (params.has("autoplay") || (window.matchMedia("(min-width: 900px) and (pointer: fine)").matches && !params.has("manual"))) start();
+})();
+</script>
+</body>
+</html>

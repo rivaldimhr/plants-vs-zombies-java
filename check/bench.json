@@ -1,0 +1,90 @@
+[
+  {
+    "config": "muat awal 10 Mbps: JAR lama, tanpa preloadResources",
+    "detik_sampai_menu": 20.1
+  },
+  {
+    "config": "muat awal 10 Mbps: JAR kecil, tanpa preloadResources",
+    "detik_sampai_menu": 19.8
+  },
+  {
+    "config": "muat awal 10 Mbps: JAR kecil + preloadResources (sekarang)",
+    "detik_sampai_menu": 18.2
+  },
+  {
+    "config": "lama: 120 fps, kualitas tinggi, tanpa pemanasan",
+    "query": "fps=120&fast=0&scale=1.5&warmup=0",
+    "detik_sampai_menu": 4.2,
+    "klik_start_ms": 963,
+    "klik_level_ms": 713,
+    "klik_play_ms": 429,
+    "klik_kartu_ms": 69,
+    "ups_saat_main": 26.1,
+    "fps_saat_main": 16.4,
+    "first_paint": [
+      "PVZ_FIRSTPAINT state=MENU ms=1394",
+      "PVZ_FIRSTPAINT state=LEVEL_SELECT ms=837",
+      "PVZ_FIRSTPAINT state=INVENTORY ms=464",
+      "PVZ_FIRSTPAINT state=GAME_LEVEL ms=282"
+    ],
+    "warmup": [],
+    "log_perf": [
+      "PVZ_PERF state=GAME_LEVEL ups=30.9 fps=15.1 maxPaintMs=282",
+      "PVZ_PERF state=GAME_LEVEL ups=26.9 fps=16.0 maxPaintMs=176",
+      "PVZ_PERF state=GAME_LEVEL ups=21.2 fps=17.5 maxPaintMs=70",
+      "PVZ_PERF state=GAME_LEVEL ups=25.4 fps=17.0 maxPaintMs=68"
+    ]
+  },
+  {
+    "config": "60 fps, render cepat, tanpa pemanasan",
+    "query": "fps=60&fast=1&scale=1.5&warmup=0",
+    "detik_sampai_menu": 4.1,
+    "klik_start_ms": 809,
+    "klik_level_ms": 535,
+    "klik_play_ms": 326,
+    "klik_kartu_ms": 203,
+    "ups_saat_main": 60.4,
+    "fps_saat_main": 49.9,
+    "first_paint": [
+      "PVZ_FIRSTPAINT state=MENU ms=1307",
+      "PVZ_FIRSTPAINT state=LEVEL_SELECT ms=753",
+      "PVZ_FIRSTPAINT state=INVENTORY ms=416",
+      "PVZ_FIRSTPAINT state=GAME_LEVEL ms=238"
+    ],
+    "warmup": [],
+    "log_perf": [
+      "PVZ_PERF state=GAME_LEVEL ups=57.0 fps=36.9 maxPaintMs=416",
+      "PVZ_PERF state=GAME_LEVEL ups=64.5 fps=50.7 maxPaintMs=149",
+      "PVZ_PERF state=GAME_LEVEL ups=60.1 fps=55.7 maxPaintMs=32",
+      "PVZ_PERF state=GAME_LEVEL ups=60.0 fps=56.2 maxPaintMs=24"
+    ]
+  },
+  {
+    "config": "bawaan sekarang: 60 fps, render cepat, pemanasan",
+    "query": "scale=1.5",
+    "detik_sampai_menu": 4.0,
+    "klik_start_ms": 120,
+    "klik_level_ms": 140,
+    "klik_play_ms": 347,
+    "klik_kartu_ms": 184,
+    "ups_saat_main": 60.8,
+    "fps_saat_main": 50.8,
+    "first_paint": [
+      "PVZ_FIRSTPAINT state=MENU ms=1330",
+      "PVZ_FIRSTPAINT state=LEVEL_SELECT ms=77",
+      "PVZ_FIRSTPAINT state=INVENTORY ms=24",
+      "PVZ_FIRSTPAINT state=GAME_LEVEL ms=275"
+    ],
+    "warmup": [
+      "PVZ_WARMUP_STEP render LEVEL_SELECT 782 ms",
+      "PVZ_WARMUP_STEP render INVENTORY 411 ms",
+      "PVZ_WARMUP 2 langkah selesai dalam 3982 ms"
+    ],
+    "log_perf": [
+      "PVZ_PERF state=GAME_LEVEL ups=55.2 fps=40.6 maxPaintMs=275",
+      "PVZ_PERF state=GAME_LEVEL ups=67.9 fps=51.1 maxPaintMs=125",
+      "PVZ_PERF state=GAME_LEVEL ups=60.1 fps=55.7 maxPaintMs=25",
+      "PVZ_PERF state=GAME_LEVEL ups=59.9 fps=55.7 maxPaintMs=25"
+    ]
+  }
+]
