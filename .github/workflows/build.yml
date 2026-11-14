@@ -101,6 +101,14 @@ jobs:
         run: |
           V="v$(cat VERSION)"
           if gh release view "$V" >/dev/null 2>&1; then
+            # Bila tag tidak lagi ada di riwayat main (mis. setelah riwayat ditulis ulang),
+            # arahkan tag ke commit tempat JAR ini dibangun.
+            TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$V" --jq .sha)
+            STATUS=$(gh api "repos/$GITHUB_REPOSITORY/compare/$TAG_SHA...$GITHUB_SHA" --jq .status)
+            if [ "$STATUS" = "diverged" ]; then
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$V" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+              echo "Tag $V dipindahkan dari $TAG_SHA ke $GITHUB_SHA"
+            fi
             gh release upload "$V" dist/plants-vs-zombies.jar --clobber
           else
             gh release create "$V" dist/plants-vs-zombies.jar --target "$GITHUB_SHA" --title "$V" --notes-file .github/release-notes.md
