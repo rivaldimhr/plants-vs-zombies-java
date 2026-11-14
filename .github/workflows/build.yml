@@ -40,13 +40,15 @@ jobs:
           sudo apt-get install -y -qq xvfb >/dev/null
           javac -encoding UTF-8 -cp dist/plants-vs-zombies.jar -d tools/demo/out tools/demo/DemoPlayer.java
           set -o pipefail
-          xvfb-run -a -s "-screen 0 1280x800x24" java -cp dist/plants-vs-zombies.jar:tools/demo/out DemoPlayer 70 | tee e2e.log
+          mkdir -p dist/web/check
+          xvfb-run -a -s "-screen 0 1280x800x24" java -Ddemo.out=dist/web/check -cp dist/plants-vs-zombies.jar:tools/demo/out DemoPlayer 70 2>&1 | tee e2e.log
           grep DEMO_SUMMARY e2e.log
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Test versi browser (CheerpJ + Chromium)
+        if: always()
         run: |
           pip install -q playwright pillow
           python -m playwright install --with-deps chromium >/dev/null

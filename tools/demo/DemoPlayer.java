@@ -94,6 +94,7 @@ public class DemoPlayer {
     private boolean play(int seconds) throws InterruptedException {
         if (!clickUntil(MENU_START, States.LEVEL_SELECT) || !clickUntil(LEVEL_1, States.INVENTORY)) {
             System.err.println("Gagal berpindah layar, state: " + game.getStates());
+            saveDiagnostics();
             return false;
         }
         for (Point pick : INVENTORY_PICKS) {
@@ -134,6 +135,24 @@ public class DemoPlayer {
             }
         }
         return false;
+    }
+
+    // Simpan screenshot layar + info jendela ke folder -Ddemo.out (untuk memeriksa kegagalan di CI)
+    private void saveDiagnostics() {
+        String dir = System.getProperty("demo.out");
+        java.awt.Point origin = game.getGameScreen().getLocationOnScreen();
+        java.awt.Dimension size = game.getGameScreen().getSize();
+        System.err.printf("Jendela game di layar: %s ukuran %s, skala %.2f, layar %s%n", origin, size,
+            game.getSaveData().getWindowScale(), java.awt.Toolkit.getDefaultToolkit().getScreenSize());
+        if (dir == null) {
+            return;
+        }
+        try {
+            java.awt.Rectangle screen = new java.awt.Rectangle(java.awt.Toolkit.getDefaultToolkit().getScreenSize());
+            javax.imageio.ImageIO.write(robot.createScreenCapture(screen), "png", new java.io.File(dir, "e2e-gagal.png"));
+        } catch (Exception e) {
+            System.err.println("Screenshot gagal: " + e);
+        }
     }
 
     private void collectSun(Board board) throws InterruptedException {
