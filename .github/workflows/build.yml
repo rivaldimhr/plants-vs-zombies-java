@@ -69,6 +69,40 @@ jobs:
           python tools/web_bench.py dist/web dist/web/check/bench.json
           rm -f dist/web/plants-vs-zombies-full.jar
 
+      - name: Publikasikan versi browser ke gh-pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/web
+          force_orphan: true
+
+      - name: Rilis versi di file VERSION (dibuat sekali, JAR diperbarui di push berikutnya)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          mkdir -p dist/web/check
+          {
+            V="v$(cat VERSION)"
+            if gh release view "$V" >/dev/null 2>&1; then
+              # Bila tag tidak ada di riwayat main (mis. setelah riwayat ditulis ulang),
+              # arahkan tag ke commit tempat JAR ini dibangun.
+              TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$V" --jq .sha)
+              STATUS=$(gh api "repos/$GITHUB_REPOSITORY/compare/$TAG_SHA...$GITHUB_SHA" --jq .status 2>/dev/null || echo diverged)
+              echo "tag $V = $TAG_SHA, status terhadap $GITHUB_SHA: $STATUS"
+              if [ "$STATUS" != "ahead" ] && [ "$STATUS" != "identical" ]; then
+                gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$V" -f sha="$GITHUB_SHA" -F force=true --jq .object.sha
+                echo "Tag $V dipindahkan ke $GITHUB_SHA"
+              fi
+              gh release upload "$V" dist/plants-vs-zombies.jar --clobber
+            else
+              gh release create "$V" dist/plants-vs-zombies.jar --target "$GITHUB_SHA" --title "$V" --notes-file .github/release-notes.md
+            fi
+            echo "RELEASE_OK"
+          } 2>&1 | tee dist/web/check/release.log
+
       - name: Simpan hasil cek browser ke branch ci-check
         if: always() && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
@@ -85,34 +119,6 @@ jobs:
           path: |
             dist/plants-vs-zombies.jar
             dist/web/check
-
-      - name: Publikasikan versi browser ke gh-pages
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/web
-          force_orphan: true
-
-      - name: Rilis versi di file VERSION (dibuat sekali, JAR diperbarui di push berikutnya)
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          V="v$(cat VERSION)"
-          if gh release view "$V" >/dev/null 2>&1; then
-            # Bila tag tidak lagi ada di riwayat main (mis. setelah riwayat ditulis ulang),
-            # arahkan tag ke commit tempat JAR ini dibangun.
-            TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$V" --jq .sha)
-            STATUS=$(gh api "repos/$GITHUB_REPOSITORY/compare/$TAG_SHA...$GITHUB_SHA" --jq .status)
-            if [ "$STATUS" = "diverged" ]; then
-              gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$V" -f sha="$GITHUB_SHA" -F force=true >/dev/null
-              echo "Tag $V dipindahkan dari $TAG_SHA ke $GITHUB_SHA"
-            fi
-            gh release upload "$V" dist/plants-vs-zombies.jar --clobber
-          else
-            gh release create "$V" dist/plants-vs-zombies.jar --target "$GITHUB_SHA" --title "$V" --notes-file .github/release-notes.md
-          fi
 
       - name: Release dari tag
         if: startsWith(github.ref, 'refs/tags/v')
